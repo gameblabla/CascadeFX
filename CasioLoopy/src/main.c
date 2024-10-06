@@ -1,3 +1,8 @@
+/*
+ * 2024 - Gameblabla
+ * LICENSE : MIT (except when stated otherwise)
+*/
+
 #include <stdint.h>
 #include <limits.h>
 #include <math.h>
