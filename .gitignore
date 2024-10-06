@@ -1,0 +1,7 @@
+*.elf
+*.o
+*.out
+*.a
+obj/
+CasioLoopy/obj
+CasioLoopy/*.bin

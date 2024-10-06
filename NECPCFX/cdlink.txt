@@ -1,0 +1,7 @@
+binary ./out.bin
+name STNICCC
+maker BugoTheCat
+makerid BTC
+date 20220213
+country 1
+version 256

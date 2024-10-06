@@ -1,0 +1,11 @@
+*.mp3
+*.o
+*.zip
+*.7z
+*.vox
+obj
+*.map
+*.bin
+*.source
+track*
+*.elf
