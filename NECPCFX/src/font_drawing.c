@@ -12,22 +12,22 @@
 
 #define SCREEN_WIDTH 256
 #define SCREEN_HEIGHT 240
-extern uint16_t framebuffer_game[SCREEN_WIDTH*SCREEN_HEIGHT/2];
+extern int16_t framebuffer_game[SCREEN_WIDTH*SCREEN_HEIGHT/2];
 
 static inline void SetPixel16(int32_t x, int32_t y, int32_t color) {
-    int32_t index = y * SCREEN_WIDTH + x;
-    ((uint16_t*)framebuffer_game)[index >> 1] = color;
+	int32_t index = y * SCREEN_WIDTH + x;
+    ((int16_t*)framebuffer_game)[index >> 1] = color;
 }
 
 
 // Function to read a 16-bit word from the framebuffer, handling endianess
 static inline uint16_t GetPixel16(int32_t x, int32_t y) {
     // Calculate the address in the framebuffer
-    uint16_t *fb = (uint16_t *)framebuffer_game;
-    uint16_t data = fb[y * (SCREEN_WIDTH / 2) + (x / 2)];
+    int16_t *fb = (int16_t *)framebuffer_game;
+    int16_t data = fb[y * (SCREEN_WIDTH / 2) + (x / 2)];
 
     // Byteswap to convert from big endian framebuffer to little endian CPU
-    return BSWAP16(data);
+    return (data);
 }
 
 // Modified SetPixel8 function

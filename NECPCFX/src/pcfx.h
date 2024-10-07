@@ -68,6 +68,8 @@ extern int getTicks();
 
 extern void Clear_VDC(int chip);
 
+extern void vsync(int numframes);
+
 #define VDC_CHIP_0 0
 #define VDC_CHIP_1 1
 

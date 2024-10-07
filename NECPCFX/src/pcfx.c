@@ -19,6 +19,9 @@ int currentvid = -1;
 
 extern u8 font[];
 
+#define HUC6270_STAT_VD     0x0020    // Vertical Blank Detect
+/* HuC6270-A's status register (RAM mapping). Used during VSYNC interrupt */
+volatile uint16_t * const MEM_6270A_SR = (uint16_t *) 0x80000400;
 
 // FOR PSG
 
@@ -27,8 +30,8 @@ int samplepsg_play[SAMPLES_PSG_NUMBER];
 int samplepsg_size[SAMPLES_PSG_NUMBER];
 int samplepsg_loop[SAMPLES_PSG_NUMBER];
 int samplepsg_ch[SAMPLES_PSG_NUMBER];
-#define BG_KRAM_PAGE 1
-#define ADPCM_KRAM_PAGE 0
+#define BG_KRAM_PAGE 0
+#define ADPCM_KRAM_PAGE 1
 
 u16 microprog[16];
 
@@ -63,7 +66,7 @@ void Set_Video(int bpp)
 	eris_tetsu_set_king_palette(0, 0, 0, 0);
 	eris_tetsu_set_rainbow_palette(0);
 
-	eris_king_set_bg_prio(KING_BGPRIO_0, KING_BGPRIO_HIDE, KING_BGPRIO_HIDE, KING_BGPRIO_HIDE, 1);
+	eris_king_set_bg_prio(KING_BGPRIO_0, KING_BGPRIO_HIDE, KING_BGPRIO_HIDE, KING_BGPRIO_HIDE, 0);
 	
 	eris_king_set_bg_mode(bpp, 0, 0, 0);
 	
@@ -110,7 +113,7 @@ void Set_Video(int bpp)
 			microprog[1] = KING_CODE_BG0_CG_1;
 			microprog[2] = KING_CODE_BG0_CG_2;
 			microprog[3] = KING_CODE_BG0_CG_3;
-			microprog[4] = KING_CODE_ROTATE;
+			//microprog[4] = KING_CODE_ROTATE;
 		break;
 	}
 
@@ -137,9 +140,9 @@ void Set_Video(int bpp)
 	eris_king_set_bat_cg_addr(KING_BG0, 0, 0);
 	eris_king_set_bat_cg_addr(KING_BG0SUB, 0, 0);
 	eris_king_set_scroll(KING_BG0, 0, 0);
-	eris_king_set_bg_size(KING_BG0, KING_BGSIZE_256, KING_BGSIZE_256, 0, 0);
+	eris_king_set_bg_size(KING_BG0, KING_BGSIZE_512, KING_BGSIZE_256, 0, 0);
 
-	eris_king_set_bg_affine_transform(128, 120, 1.0, 1.0, 0);
+	//eris_king_set_bg_affine_transform(128, 120, 1.0, 1.0, 0);
 	
 	eris_low_sup_set_vram_write(0, 0);
 	for(i = 0; i < 0x800; i++) {
@@ -434,6 +437,30 @@ __attribute__ ((noinline)) void increment_zda_timer_count (void)
 	frame_text++;
 }
 
+// interrupt-handling variables
+volatile int sda_frame_count = 0;
+volatile int last_sda_frame_count = 0;
+
+///////////////////////////////// Interrupt handler
+__attribute__ ((interrupt_handler)) void my_vblank_irq (void)
+{
+   static int random_initialized = 0;
+   uint16_t vdc_status = *MEM_6270A_SR;
+
+
+   if (vdc_status & HUC6270_STAT_VD )
+   {
+		sda_frame_count++;
+   }
+}
+
+void vsync(int numframes)
+{
+   while (sda_frame_count < (last_sda_frame_count + numframes + 1));
+
+   last_sda_frame_count = sda_frame_count;
+}
+
 
 __attribute__ ((interrupt)) void samplepsg_timer_irq (void)
 {
@@ -530,6 +557,8 @@ __attribute__ ((interrupt)) void my_timer_irq (void)
 void initTimer(int psg, int period) {
     // Disable all interrupts before changing handlers.
     irq_set_mask(0x7F);
+    
+	irq_set_raw_handler(0xC, my_vblank_irq);
 
     // Set the custom IRQ handler
     if (psg)
@@ -542,7 +571,7 @@ void initTimer(int psg, int period) {
 	}
 
     // Enable Timer interrupt.
-    irq_set_mask(0x3F);
+    irq_set_mask(0x37);
 
     // Reset and start the Timer with the specified period.
     eris_timer_init();

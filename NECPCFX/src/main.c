@@ -19,11 +19,14 @@
 #include "title.h"
 #include "trig.h"
 
+//#define DEBUGFPS 1 
+extern int nframe;
+
 /* PC-FX SPECIFIC */
 
 void my_memcpy32(void *dest, const void *src, size_t n) {
-    uint32_t *d = (uint32_t*)dest;
-    const uint32_t *s = (const uint32_t*)src;
+    int32_t *d = (int32_t*)dest;
+    const int32_t *s = (const int32_t*)src;
 
     // Copy 4 bytes at a time (32 bits)
     while (n >= 4) {
@@ -32,8 +35,8 @@ void my_memcpy32(void *dest, const void *src, size_t n) {
     }
 
     // Handle any remaining bytes (if the size is not a multiple of 4)
-    uint8_t *d8 = (uint8_t*)d;
-    const uint8_t *s8 = (const uint8_t*)s;
+    int8_t *d8 = (int8_t*)d;
+    const int8_t *s8 = (const int8_t*)s;
     while (n > 0) {
         *d8++ = *s8++;
         n--;
@@ -114,11 +117,11 @@ static inline void swap_elements(void *a, void *b, size_t size) {
     unsigned char *pb = (unsigned char*)b;
     
     // Operate on 32-bit chunks if size is a multiple of 4
-    while (size >= sizeof(uint32_t)) {
-        SWAP(*(uint32_t*)pa, *(uint32_t*)pb);
-        pa += sizeof(uint32_t);
-        pb += sizeof(uint32_t);
-        size -= sizeof(uint32_t);
+    while (size >= sizeof(int32_t)) {
+        SWAP(*(int32_t*)pa, *(int32_t*)pb);
+        pa += sizeof(int32_t);
+        pb += sizeof(int32_t);
+        size -= sizeof(int32_t);
     }
 
     // Operate on 16-bit chunks if size is a multiple of 2
@@ -230,7 +233,7 @@ typedef struct {
 // Structure to represent a 2D point with texture coordinates
 typedef struct {
     int32_t x, y;
-    uint32_t u, v;
+    int32_t u, v;
 } Point2D;
 
 // Structure to represent a face
@@ -244,7 +247,7 @@ uint8_t grid[GRID_HEIGHT * GRID_WIDTH];
 int score = 0;
 bool game_over = false;
 
-uint32_t drop_interval = 30; // Drop every 500ms
+int32_t drop_interval = 30; // Drop every 500ms
 
 // Background state variables
 int clear_background_frames = 0;
@@ -349,7 +352,7 @@ static const Point3D cube_vertices_template[8] = {
     {-DISTANCE_CUBE, -DISTANCE_CUBE, -DISTANCE_CUBE}  // 7
 };
 
-static const uint32_t cube_texcoords_template[8 * 2] = {
+static const int32_t cube_texcoords_template[8 * 2] = {
     0<<8, 0<<8,    // Vertex 0
     31<<8, 0<<8,   // Vertex 1
     31<<8, 31<<8,  // Vertex 2
@@ -371,19 +374,19 @@ static const Face cube_faces_template[6] = {
 };
 
 // Function to set a pixel using 8-bit palette index
-static inline void setPixel(uint32_t x, uint32_t y, uint8_t color) {
+static inline void setPixel(int32_t x, int32_t y, uint8_t color) {
     //if (x >= SCREEN_WIDTH || y >= SCREEN_HEIGHT) return;
-    ((uint8_t*)framebuffer_game)[y * SCREEN_WIDTH + x] = color;
+    ((int8_t*)framebuffer_game)[y * SCREEN_WIDTH + x] = color;
 }
 
 
 static inline void SetPixel16(int32_t x, int32_t y, int32_t color) {
     int32_t index = y * SCREEN_WIDTH + x;
-    ((uint16_t*)framebuffer_game)[index >> 1] = color;
+    ((int16_t*)framebuffer_game)[index >> 1] = color;
 }
 
 // Helper function to fetch the texture color
-static inline uint32_t fetchTextureColor(int32_t u, int32_t v, int tetromino_type) {
+static inline int16_t fetchTextureColor(int32_t u, int32_t v, int tetromino_type) {
     uint8_t tex_u = ((u >> 8) & 31);
     uint8_t tex_v_full = ((v >> 8) & 31);
     bool is_brighter = tex_v_full >= 16;
@@ -398,27 +401,40 @@ static inline uint32_t fetchTextureColor(int32_t u, int32_t v, int tetromino_typ
     uint8_t *texture16 = (uint8_t *)texture;
     
     // Extract the 8-bit value from the 16-bit storage
-    uint8_t color = (uint8_t)(texture16[index] ); // Assuming lower byte contains the color index
+    int16_t color = (int16_t)(texture16[index] ); // Assuming lower byte contains the color index
     
     return color;
 }
 
-#define BSWAP16(x) ((((x) & 0xFF00) >> 8) | (((x) & 0x00FF) << 8))
+static inline int16_t fetchTextureColor16(int32_t u, int32_t v, int tetromino_type) {
+    int32_t tex_u = ((u >> 8) & 31);
+    int32_t tex_v_full = ((v >> 8) & 31);
+    bool is_brighter = tex_v_full >= 16;
+    int32_t local_v = tex_v_full & 0x0F;
+    int tile_index = tetromino_type * 2 + (is_brighter ? 1 : 0);
+    if (tile_index >= 14) tile_index = 0;
+    
+    // Calculate the index in the texture array
+    int index = (tile_index * 32 * 16 + local_v * 32 + tex_u)/2;
+
+    int16_t color = texture[index];
+    
+    return color;
+}
 
 // Function to read a 16-bit word from the framebuffer, handling endianess
-static inline uint16_t GetPixel16(int32_t x, int32_t y) {
+static inline int16_t GetPixel16(int32_t x, int32_t y) {
     // Calculate the address in the framebuffer
-    uint16_t *fb = (uint16_t *)framebuffer_game;
-    uint16_t data = fb[y * (SCREEN_WIDTH / 2) + (x / 2)];
-
-    // Byteswap to convert from big endian framebuffer to little endian CPU
-    return BSWAP16(data);
+    int16_t *fb = (int16_t *)framebuffer_game;
+    int16_t data = fb[y * (SCREEN_WIDTH / 2) + (x / 2)];
+    return data;
 }
 
 // Modified SetPixel8 function
-static inline void SetPixel8(int32_t x, int32_t y, uint8_t color) {
+static inline void SetPixel8(int32_t x, int32_t y, int32_t color) 
+{
     // Read the existing 16-bit word from the framebuffer
-    uint16_t existing_data = GetPixel16(x & ~1, y); // Align x to even position
+    int16_t existing_data = GetPixel16(x & ~1, y); // Align x to even position
 
     // Modify the appropriate byte
     if (x & 1) {
@@ -432,6 +448,9 @@ static inline void SetPixel8(int32_t x, int32_t y, uint8_t color) {
     // Write back the modified 16-bit word using SetPixel16
     SetPixel16(x & ~1, y, existing_data);
 }
+
+#define BSWAP16(x) ((((x) & 0xFF00) >> 8) | (((x) & 0x00FF) << 8))
+
 
 static inline void drawScanline(int32_t xs, int32_t xe, int32_t u, int32_t v,
     int32_t du, int32_t dv, int y, int tetromino_type) {
@@ -451,21 +470,17 @@ static inline void drawScanline(int32_t xs, int32_t xe, int32_t u, int32_t v,
     }
 
     int32_t x;
-    for (x = xs; x <= xe - 1; x += 2) {
-        int32_t color1 = fetchTextureColor(u, v, tetromino_type);
+    for (x = xs; x <= xe - 1; x += 2) 
+    {
+        int32_t colors = BSWAP16(fetchTextureColor16(u, v, tetromino_type));
         u += du;
         v += dv;
-        int32_t color2 = fetchTextureColor(u, v, tetromino_type);
         u += du;
         v += dv;
-#ifdef BIGENDIAN_TEXTURING
-        int32_t colors = (color1 << 8) | color2;
-#else
-        int32_t colors = (color2 << 8) | color1;
-#endif
         SetPixel16(x, y, colors);
     }
-    if (x == xe) {
+    if (x == xe) 
+    {
         int32_t color = fetchTextureColor(u, v, tetromino_type);
         SetPixel8(x, y, color);
     }
@@ -621,7 +636,7 @@ Point3D rotateZ(Point3D p, int angle) {
 }
 
 // Project a 3D point to 2D screen space with texture coordinates
-Point2D project(Point3D p, uint32_t u, uint32_t v) {
+Point2D project(Point3D p, int32_t u, int32_t v) {
     int32_t distance = PROJECTION_DISTANCE;
     int32_t factor = (distance << FIXED_POINT_SHIFT) / (distance - p.z);
     int32_t x = (p.x * factor) >> FIXED_POINT_SHIFT;
@@ -668,7 +683,7 @@ void draw_current_piece() {
 
     // Collect vertices and faces for the entire piece
     Point3D piece_vertices[MAX_PIECE_VERTICES]; // Max 4 blocks * 8 vertices per block
-    uint32_t piece_texcoords[MAX_PIECE_VERTICES * 2];
+    int32_t piece_texcoords[MAX_PIECE_VERTICES * 2];
     Face piece_faces[MAX_PIECE_FACES];          // Max 4 blocks * 6 faces per block
     int vertex_count = 0;
     int face_count_piece = 0;
@@ -845,7 +860,7 @@ void draw_grid() {
 
                 // Collect vertices and faces for the cube
                 Point3D cube_vertices[8];
-                uint32_t cube_texcoords[8 * 2];
+                int32_t cube_texcoords[8 * 2];
                 Face cube_faces[6];
 
                 int x_offset = x - (GRID_WIDTH * CUBE_SIZE) / 2;
@@ -1018,9 +1033,9 @@ uint8_t color = 0;
 
 // Function to draw text
 void PrintText(const char* str, int x, int y) {
-	print_at(x/8, y/8, 12, str);
+	//print_at(x/8, y/8, 12, str);
 
-    //print_string(str, 255, 0, x, y, (uint8_t*)framebuffer_game);
+    print_string(str, 255, 0, x, y, (int8_t*)framebuffer_game);
 }
 
 // Comparator function for qsort
@@ -1165,7 +1180,7 @@ void load_puzzle(int index) {
 }
 
 // Define the texture coordinates for the cube vertices (one-dimensional array)
-const uint32_t cube_texcoords[48] = {
+const int32_t cube_texcoords[48] = {
     // Front face (vertices 0-3)
     0 << 8,  0 << 8,  // Vertex 0
     31 << 8, 0 << 8,  // Vertex 1
@@ -1544,10 +1559,17 @@ void Game_Switch(int state)
 			cd_end_track(3,CDDA_LOOP);
 			
 			my_memcpy32(framebuffer_game, bg_title, SCREEN_WIDTH * SCREEN_HEIGHT);
-			
+
+			eris_king_set_kram_write(0, 1);
+			king_kram_write_buffer(bg_title, SCREEN_WIDTH * SCREEN_HEIGHT);
+				
 		break;
 		case GAME_STATE_MENU:
 			my_memcpy32(framebuffer_game, bg_title, SCREEN_WIDTH * SCREEN_HEIGHT);
+
+			eris_king_set_kram_write(0, 1);
+			king_kram_write_buffer(bg_title, SCREEN_WIDTH * SCREEN_HEIGHT);
+			
 			// Draw menu options
 			PrintText("Select Mode", SCREEN_WIDTH_HALF - 50, 160);
 		break;
@@ -1607,7 +1629,7 @@ void Game_Switch(int state)
 // Function to draw a partial grid around the current piece
 void draw_grid_partial() {
     // Define the area around the current piece to redraw
-    const int REDRAW_MARGIN = 3;  // Adjust this value based on your needs
+    const int REDRAW_MARGIN = 4;  // Adjust this value based on your needs
 
     int start_y = max(0, current_piece.y - REDRAW_MARGIN);
     int end_y = min(GRID_HEIGHT - 1, current_piece.y + REDRAW_MARGIN);
@@ -1625,7 +1647,7 @@ void draw_grid_partial() {
 
                 // Collect vertices and faces for the cube
                 Point3D cube_vertices[8];
-                uint32_t cube_texcoords[8 * 2];
+                int32_t cube_texcoords[8 * 2];
                 Face cube_faces[6];
 
                 int x_offset = x - (GRID_WIDTH * CUBE_SIZE) / 2;
@@ -1717,8 +1739,6 @@ void Init_video_game()
 
 int main() 
 {
-	char mytext[32];
-	int previous_piece_x, previous_piece_y;
 	Init_video_game();
 
     // Initialize game state
@@ -1732,10 +1752,10 @@ int main()
     initialize_puzzles();
 
     int running = 1;
-    uint32_t last_tick = 0;
-    uint32_t last_drop = 0;
-    uint32_t current_tick = 0;
-    uint32_t game_tick = 0;
+    int32_t last_tick = 0;
+    int32_t last_drop = 0;
+    int32_t current_tick = 0;
+    int32_t game_tick = 0;
 
     int title_cube_rotation = 0;
     int blink_counter = 0;
@@ -1812,8 +1832,7 @@ int main()
 				title_cube_rotation_z = (title_cube_rotation_z + 3) & ANGLE_MASK;
 				
                 // Blinking text
-                blink_counter = (blink_counter + 1) % 60;
-                blink_on = blink_counter < 30;
+                blink_counter++;
 
                 if (title_cube_position_z <= -320)
                 {
@@ -1836,25 +1855,29 @@ int main()
 					}	
 				}
 				
-				my_memcpy32(framebuffer_game + (256 * 45), bg_title + (256 * 45), SCREEN_WIDTH * 100);
+				my_memcpy32(framebuffer_game + (SCREEN_WIDTH * 45), bg_title + (SCREEN_WIDTH * 45), SCREEN_WIDTH * 100);
 				
 				// Draw rotating cube with updated position
 				draw_title_cube(title_cube_rotation_x, title_cube_rotation_y, title_cube_rotation_z, title_cube_position_x, -20, title_cube_position_z);
 
-                // Draw blinking "Press Start to play"
-				if (blink_on) 
-                {
-					PrintText("Press Start to Play", SCREEN_WIDTH_HALF - 80, SCREEN_HEIGHT - 45);
-                }
-                else
-                {
-					PrintText("                   ", SCREEN_WIDTH_HALF - 80, SCREEN_HEIGHT - 45);
-				}
 
+				if (blink_counter < 60)
+				{
+					PrintText("Press Start to Play", SCREEN_WIDTH_HALF - 80, 170);
+				}
+				if (blink_counter >= 120)
+				{
+					blink_counter = 0;
+				}
+				
 				if (start_button) {
 					Game_Switch(GAME_STATE_MENU);
 				}
+				
+				eris_king_set_kram_write((SCREEN_WIDTH * 45), 1);
+				king_kram_write_buffer(framebuffer_game + (SCREEN_WIDTH * 45), SCREEN_WIDTH * 120);
 
+				
                 break;
             case GAME_STATE_MENU:
 				if (up_button) {
@@ -1893,6 +1916,9 @@ int main()
 					break;
 				}
 
+				eris_king_set_kram_write((SCREEN_WIDTH * 90), 1);
+				king_kram_write_buffer(framebuffer_game + (SCREEN_WIDTH * 90), SCREEN_WIDTH * 48);
+
 				if (BUTTON_PRESSED(a_button)) 
 				{
 					if (menu_selection == 0) {
@@ -1907,16 +1933,6 @@ int main()
                 break;
             case GAME_STATE_ARCADE:
             case GAME_STATE_PUZZLE:
-				previous_piece_x = current_piece.x;
-				previous_piece_y = current_piece.y;
-            
-				/*if (BUTTON_PRESSED(a_button)) {
-					if (game_over) {
-						Game_Switch(GAME_STATE_TITLE);
-					}
-				}*/
-				
-
                 // Reset face count before collecting faces
                 face_count = 0;
 				
@@ -2067,9 +2083,9 @@ int main()
 						PrintText(myitoa(score), 10, 10);
 					}
 
-					// Update previous position for next check
-					previous_piece_x = current_piece.x;
-					previous_piece_y = current_piece.y;
+					eris_king_set_kram_write(0, 1);
+					king_kram_write_buffer(framebuffer_game, SCREEN_WIDTH*SCREEN_HEIGHT);
+
 					force_redraw = 0;
 					force_redraw_puzzle = 0;
 				}
@@ -2087,6 +2103,9 @@ int main()
                 // Draw game over texts
                 PrintText("Game Over!", SCREEN_WIDTH_HALF - 40, SCREEN_HEIGHT_HALF - 10);
                 PrintText("Press Start to return", SCREEN_WIDTH_HALF - 80, SCREEN_HEIGHT_HALF + 10);
+
+				eris_king_set_kram_write(0, 1);
+				king_kram_write_buffer(framebuffer_game, SCREEN_WIDTH*SCREEN_HEIGHT);
 
                 break;
             case GAME_STATE_CREDITS:
@@ -2109,15 +2128,22 @@ int main()
 				if (BUTTON_PRESSED(start_button) || BUTTON_PRESSED(a_button)) {
 					Game_Switch(GAME_STATE_TITLE);
 				}
+				
+				eris_king_set_kram_write(0, 1);
+				king_kram_write_buffer(framebuffer_game, SCREEN_WIDTH*SCREEN_HEIGHT);
             break;
             default:
                 break;
         }
         
-		eris_king_set_kram_write(0, 1);
-		king_kram_write_buffer(framebuffer_game, SCREEN_WIDTH*SCREEN_HEIGHT);
+		#ifdef DEBUGFPS
+		print_at(0, 1, 12, myitoa(getFps()));
+		#endif
+
+		vsync(0);
         
 		game_state = alt_state;
+		++nframe;
     }
 
     return 0;
