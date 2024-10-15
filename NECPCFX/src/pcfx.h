@@ -1,6 +1,7 @@
 #ifndef PCFX_H
 #define PCFX_H
 
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <malloc.h>
@@ -30,7 +31,7 @@ extern void Set_Video(int bpp);
 
 extern void Initialize_ADPCM(int freq);
 
-extern void Play_ADPCM(int channel, int start_adress, int sizet, unsigned char loop, int freq );
+extern void Play_ADPCM(int channel, int start_adress, int sizet, bool loop, int freq );
 
 extern void chartou32(char* str, u32* o);
 
@@ -43,6 +44,8 @@ extern void Upload_Palette(unsigned short pal[], int sizep);
 extern void LoadADPCMCD(u32 lba, u32 addr, int size_sample);
 
 extern void Load_PSGSample(u32 lba, int numb, int size_sample);
+
+extern void Load_PSGSample_RAM(char* buf, int numb, int size_sample);
 
 extern void Play_PSGSample(int ch, int sample_numb, int loop);
 
@@ -70,10 +73,18 @@ extern void Clear_VDC(int chip);
 
 extern void vsync(int numframes);
 
+extern void Empty_Palette();
+
+
+extern void fadeOutPalette(unsigned short pal[], int sizep);
+
+extern void fadeInPalette(unsigned short pal[], int sizep);
+
+
 #define VDC_CHIP_0 0
 #define VDC_CHIP_1 1
 
-#define SAMPLES_PSG_NUMBER 1
+#define SAMPLES_PSG_NUMBER 6
 
 extern int currentvid;
 

@@ -2,12 +2,6 @@
  * 2024 - Gameblabla
  * LICENSE : MIT (except when stated otherwise)
 */
-#define NECPCFX 1 
-
-#ifndef NECPCFX
-#include <SDL/SDL.h>
-#include <SDL/SDL_image.h>
-#endif
 
 #include <stdint.h>
 #include <limits.h>
@@ -16,8 +10,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <stddef.h>
-
-#ifdef NECPCFX
 #include "fastking.h"
 #include "pcfx.h"
 
@@ -32,11 +24,6 @@
 #include "bg.h"
 #include "textures.h"
 #include "title.h"
-
-#endif
-
-#include "font_drawing.h"
-
 #include "trig.h"
 
 //#define CART_AUDIO 1
@@ -53,10 +40,10 @@
 #include "race_music.h"
 #endif
 
-int16_t framebuffer_game[256*240/2];
-
 //#define DEBUGFPS 1 
 extern int nframe;
+
+/* PC-FX SPECIFIC */
 
 static inline void my_memcpy32(void *dest, const void *src, size_t n) {
     int32_t *d = (int32_t*)dest;
@@ -67,17 +54,11 @@ static inline void my_memcpy32(void *dest, const void *src, size_t n) {
         *d++ = *s++;
         n -= 4;
     }
-
-    // Handle any remaining bytes (if the size is not a multiple of 4)
-    int8_t *d8 = (int8_t*)d;
-    const int8_t *s8 = (const int8_t*)s;
-    while (n > 0) {
-        *d8++ = *s8++;
-        n--;
-    }
 }
 
-static char* myitoa(int value) {
+int16_t framebuffer_game[256*240/2];
+
+char* myitoa(int value) {
     static char buffer[12];  // Enough for an integer (-2147483648 has 11 characters + 1 for '\0')
     char* ptr = buffer + sizeof(buffer) - 1;
     int is_negative = 0;
@@ -174,6 +155,7 @@ static void qsort_game(void *base, size_t num, size_t size, int (*compar)(const 
     quicksort(base, size, 0, num - 1, compar);
 }
 
+
 #define _16BITS_WRITES
 #define BIGENDIAN_TEXTURING 1
 //#define FORCE_FULLSCREEN_DRAWS 1
@@ -226,20 +208,6 @@ static void qsort_game(void *base, size_t num, size_t size, int (*compar)(const 
 
 #define BSWAP16(x) ((((x) & 0xFF00) >> 8) | (((x) & 0x00FF) << 8))
 
-#ifndef NECPCFX
-// Texture data (32x224 pixels) using 8-bit color indices
-uint8_t texture[32 * 224]; // 32 pixels wide, 224 pixels high
-
-// Background data arrays
-uint8_t bg_game[SCREEN_WIDTH * SCREEN_HEIGHT];
-uint8_t bg_title[SCREEN_WIDTH * SCREEN_HEIGHT];
-
-// SDL surface pointers
-SDL_Surface* screen;
-SDL_Surface* texture_surface;
-
-#endif
-
 int force_redraw = 0;
 int force_redraw_puzzle = 0;
 bool backtitle = false;
@@ -262,7 +230,7 @@ typedef struct {
 
 
 // Game state variables
-int grid[(GRID_HEIGHT * GRID_WIDTH)];
+uint8_t grid[(GRID_HEIGHT * GRID_WIDTH)];
 int score = 0;
 bool game_over = false;
 
@@ -289,7 +257,72 @@ void Game_Switch(int state);
     ((((type) * 4 + (rotation)) * 4 + (i)) * 4 + (j))
 
 // Puzzle pieces (shapes) as a 1D array
-extern const uint8_t puzzle_pieces[7 * 4 * 4 * 4];
+const uint8_t puzzle_pieces[7 * 4 * 4 * 4] = {
+    // Flattened data
+    // Type 0 (I)
+    // Rotation 0
+    0,0,0,0,  1,1,1,1,  0,0,0,0,  0,0,0,0,
+    // Rotation 1
+    0,0,1,0,  0,0,1,0,  0,0,1,0,  0,0,1,0,
+    // Rotation 2
+    0,0,0,0,  0,0,0,0,  1,1,1,1,  0,0,0,0,
+    // Rotation 3
+    0,1,0,0,  0,1,0,0,  0,1,0,0,  0,1,0,0,
+    // Type 1 (O)
+    // Rotation 0
+    0,0,0,0,  0,1,1,0,  0,1,1,0,  0,0,0,0,
+    // Rotation 1
+    0,0,0,0,  0,1,1,0,  0,1,1,0,  0,0,0,0,
+    // Rotation 2
+    0,0,0,0,  0,1,1,0,  0,1,1,0,  0,0,0,0,
+    // Rotation 3
+    0,0,0,0,  0,1,1,0,  0,1,1,0,  0,0,0,0,
+    // Type 2 (T)
+    // Rotation 0
+    0,0,0,0,  1,1,1,0,  0,1,0,0,  0,0,0,0,
+    // Rotation 1
+    0,0,1,0,  0,1,1,0,  0,0,1,0,  0,0,0,0,
+    // Rotation 2
+    0,0,0,0,  0,1,0,0,  1,1,1,0,  0,0,0,0,
+    // Rotation 3
+    0,1,0,0,  0,1,1,0,  0,1,0,0,  0,0,0,0,
+    // Type 3 (S)
+    // Rotation 0
+    0,0,0,0,  0,1,1,0,  1,1,0,0,  0,0,0,0,
+    // Rotation 1
+    0,1,0,0,  0,1,1,0,  0,0,1,0,  0,0,0,0,
+    // Rotation 2
+    0,0,0,0,  0,1,1,0,  1,1,0,0,  0,0,0,0,
+    // Rotation 3
+    0,1,0,0,  0,1,1,0,  0,0,1,0,  0,0,0,0,
+    // Type 4 (Z)
+    // Rotation 0
+    0,0,0,0,  1,1,0,0,  0,1,1,0,  0,0,0,0,
+    // Rotation 1
+    0,0,1,0,  0,1,1,0,  0,1,0,0,  0,0,0,0,
+    // Rotation 2
+    0,0,0,0,  1,1,0,0,  0,1,1,0,  0,0,0,0,
+    // Rotation 3
+    0,0,1,0,  0,1,1,0,  0,1,0,0,  0,0,0,0,
+    // Type 5 (J)
+    // Rotation 0
+    0,0,0,0,  1,1,1,0,  0,0,1,0,  0,0,0,0,
+    // Rotation 1
+    0,0,1,0,  0,0,1,0,  0,1,1,0,  0,0,0,0,
+    // Rotation 2
+    0,0,0,0,  1,0,0,0,  1,1,1,0,  0,0,0,0,
+    // Rotation 3
+    0,1,1,0,  0,1,0,0,  0,1,0,0,  0,0,0,0,
+    // Type 6 (L)
+    // Rotation 0
+    0,0,0,0,  1,1,1,0,  1,0,0,0,  0,0,0,0,
+    // Rotation 1
+    0,1,0,0,  0,1,0,0,  0,1,1,0,  0,0,0,0,
+    // Rotation 2
+    0,0,0,0,  0,0,1,0,  1,1,1,0,  0,0,0,0,
+    // Rotation 3
+    0,1,1,0,  0,0,1,0,  0,0,1,0,  0,0,0,0
+};
 
 // Common cube data
 static const Point3D cube_vertices_template[8] = {
@@ -362,7 +395,11 @@ static inline int compare_faces(const void *a, const void *b) {
     return faceA->average_depth - faceB->average_depth; // Sort from farthest to nearest
 }
 
-#ifdef NECPCFX
+static inline void SetPixel16(int32_t x, int32_t y, int32_t color) {
+    int32_t index = y * SCREEN_WIDTH + x;
+    ((int16_t*)framebuffer_game)[index >> 1] = color;
+}
+
 // Helper function to fetch the texture color
 static inline int16_t fetchTextureColor(int32_t u, int32_t v, int tetromino_type) {
     uint8_t tex_u = ((u >> 8) & 31);
@@ -406,13 +443,6 @@ static inline int16_t GetPixel16(int32_t x, int32_t y) {
     int16_t *fb = (int16_t *)framebuffer_game;
     int16_t data = fb[y * (SCREEN_WIDTH / 2) + (x / 2)];
     return data;
-}
-
-static inline void SetPixel16(uint32_t x, uint32_t y, int32_t color) {
-	if (y >= SCREEN_HEIGHT-1 || x >= SCREEN_WIDTH-1) return; 
-	int16_t *fb = (int16_t *)framebuffer_game;
-    int32_t index = y * SCREEN_WIDTH + x;
-	fb[index >> 1] = color;
 }
 
 // Modified SetPixel8 function
@@ -480,75 +510,6 @@ static inline void drawScanline(int32_t xs, int32_t xe, int32_t u, int32_t v,
     }
 #endif
 }
-
-#else
-
-// Helper function to fetch the texture color
-static inline uint32_t fetchTextureColor(int32_t u, int32_t v, int tetromino_type) {
-    uint8_t tex_u = ((u >> 8) & 31);
-    uint8_t tex_v_full = ((v >> 8) & 31);
-    bool is_brighter = tex_v_full >= 16;
-    uint8_t local_v = tex_v_full & 0x0F;
-    int tile_index = tetromino_type * 2 + (is_brighter ? 1 : 0);
-    if (tile_index >= 14) tile_index = 0;
-    return texture[tile_index * 32 * 16 + local_v * 32 + tex_u];
-}
-
-
-// Pixel setting functions
-static inline void SetPixel8(uint32_t x, uint32_t y, int32_t color) {
-	if (y >= SCREEN_HEIGHT-1 || x >= SCREEN_WIDTH-1) return; 
-    ((uint8_t*)screen->pixels)[y * SCREEN_WIDTH + x] = color;
-}
-
-static inline void SetPixel16(uint32_t x, uint32_t y, int32_t color) {
-	if (y >= SCREEN_HEIGHT-1 || x >= SCREEN_WIDTH-1) return; 
-    int32_t index = y * SCREEN_WIDTH + x;
-    ((uint16_t*)screen->pixels)[index >> 1] = color;
-}
-
-static inline void drawScanline(int32_t xs, int32_t xe, int32_t u, int32_t v,
-    int32_t du, int32_t dv, int y, int tetromino_type) {
-#if defined(_8BITS_WRITES)
-    for (int32_t x = xs; x <= xe; x++) {
-        int32_t color = fetchTextureColor(u, v, tetromino_type);
-        SetPixel8(x, y, color);
-        u += du;
-        v += dv;
-    }
-#elif defined(_16BITS_WRITES)
-    if (xs & 1) {
-        SetPixel8(xs, y, fetchTextureColor(u, v, tetromino_type));
-        xs++;
-        u += du;
-        v += dv;
-    }
-
-    int32_t x;
-    for (x = xs; x <= xe - 1; x += 2) {
-        int32_t color1 = fetchTextureColor(u, v, tetromino_type);
-        u += du;
-        v += dv;
-        int32_t color2 = fetchTextureColor(u, v, tetromino_type);
-        u += du;
-        v += dv;
-#ifdef BIGENDIAN_TEXTURING
-        int32_t colors = (color1 << 8) | color2;
-#else
-        int32_t colors = (color2 << 8) | color1;
-#endif
-        SetPixel16(x, y, colors);
-    }
-    if (x == xe) {
-        int32_t color = fetchTextureColor(u, v, tetromino_type);
-        SetPixel8(x, y, color);
-    }
-#endif
-}
-
-
-#endif
-
 
 
 static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D p3, int tetromino_type) {
@@ -811,9 +772,8 @@ static inline void draw_sorted_faces()
 					
     for (int i = 0; i < face_count; i++) {
         FaceToDraw *face = &face_list[i];
-        #if 0
         // Draw two triangles per face
-        drawTexturedTriangle(
+        /*drawTexturedTriangle(
             face->projected_vertices[0],
             face->projected_vertices[1],
             face->projected_vertices[2],
@@ -824,8 +784,7 @@ static inline void draw_sorted_faces()
             face->projected_vertices[2],
             face->projected_vertices[3],
             face->tetromino_type
-        );
-        #endif
+        );*/
 		drawTexturedQuad(
 			face->projected_vertices[0],
 			face->projected_vertices[1],
@@ -977,19 +936,19 @@ void draw_current_piece() {
     int rotation = current_piece.rotation;
     int grid_x = current_piece.x;
     int grid_y = current_piece.y;
-    const int *piece_shape = puzzle_pieces;
+    const uint8_t *piece_shape = &puzzle_pieces[PUZZLE_PIECE_INDEX(type, rotation, 0, 0)];
 
     for (int i = 0; i < 4; i++) {
+        const uint8_t *row = piece_shape + i * 4;
         for (int j = 0; j < 4; j++) {
-            int index = PUZZLE_PIECE_INDEX(type, rotation, i, j);
-            if (piece_shape[index]) {
+            if (*(row + j)) {
                 int x_offset = (grid_x + j) * CUBE_SIZE - (GRID_WIDTH * CUBE_SIZE) / 2;
                 int y_offset = (GRID_HEIGHT - (grid_y + i + 1)) * CUBE_SIZE - (GRID_HEIGHT * CUBE_SIZE) / 2;
                 int z_offset = STARTING_Z_OFFSET;
 
                 // Transform and store vertices for this block
                 Point3D transformed_vertices[8];
-                transform_cube_block(transformed_vertices, x_offset, y_offset, z_offset);
+                transform_cube_block(transformed_vertices, x_offset, y_offset, z_offset /*, angle_x, angle_y*/);
 
                 // Process faces for this block
                 process_cube_block_faces(transformed_vertices, type);
@@ -1020,7 +979,7 @@ void undraw_previous_piece() {
     int grid_y = previous_piece_state.y;
 
     // Access the piece shape
-    const int *piece_shape = puzzle_pieces;
+    const uint8_t *piece_shape = &puzzle_pieces[PUZZLE_PIECE_INDEX(type, rotation, 0, 0)];
 
     // Initialize bounding box
     int min_x = SCREEN_WIDTH;
@@ -1029,9 +988,9 @@ void undraw_previous_piece() {
     int max_y = 0;
 
     for (int i = 0; i < 4; i++) {
+        const uint8_t *row = piece_shape + i * 4;
         for (int j = 0; j < 4; j++) {
-			int index = PUZZLE_PIECE_INDEX(type, rotation, i, j);
-            if (piece_shape[index]) {
+            if (*(row + j)) {
                 int x_offset = (grid_x + j) * CUBE_SIZE - (GRID_WIDTH * CUBE_SIZE) / 2;
                 int y_offset = (GRID_HEIGHT - (grid_y + i + 1)) * CUBE_SIZE - (GRID_HEIGHT * CUBE_SIZE) / 2;
                 int z_offset = STARTING_Z_OFFSET;
@@ -1046,13 +1005,13 @@ void undraw_previous_piece() {
         }
     }
     
-#ifdef NECPCFX
-    min_x-= 1;
+    min_x-= 4;
+	max_x+= 4;
     // Clamp bounding box to screen dimensions
     if (min_x < 0) min_x = 0;
     if (min_y < 0) min_y = 0;
-    if (max_x >= SCREEN_WIDTH) max_x = SCREEN_WIDTH - 1;
-    if (max_y >= SCREEN_HEIGHT) max_y = SCREEN_HEIGHT - 1;
+    if (max_x >= SCREEN_WIDTH) max_x = SCREEN_WIDTH - 4;
+    if (max_y >= SCREEN_HEIGHT) max_y = SCREEN_HEIGHT - 4;
 
 
     // Restore background using memcpy
@@ -1061,37 +1020,13 @@ void undraw_previous_piece() {
         uint8_t* screen_row = (uint8_t*)framebuffer_game + y * SCREEN_WIDTH;
         my_memcpy32(screen_row + min_x, bg_row + min_x, max_x - min_x + 2);
     }
-#else
-    // Clamp bounding box to screen dimensions
-    if (min_x < 0) min_x = 0;
-    if (min_y < 0) min_y = 0;
-    if (max_x >= SCREEN_WIDTH) max_x = SCREEN_WIDTH - 1;
-    if (max_y >= SCREEN_HEIGHT) max_y = SCREEN_HEIGHT - 1;
-
-    // Restore background within the bounding box
-    for (int y = min_y; y <= max_y; y++) {
-        uint8_t* bg_row = bg_game + y * SCREEN_WIDTH;
-        uint8_t* screen_row = (uint8_t*)screen->pixels + y * SCREEN_WIDTH;
-#ifdef _16BITS_WRITES
-        for (int x = min_x; x <= max_x + 2 /* Extra + 2 to ensure extra clearing */; x += 2) {
-            int32_t index = y * SCREEN_WIDTH + x;
-            int32_t pixel1 = bg_row[x];
-            int32_t pixel2 = bg_row[x + 1];
-            int32_t pixels = (pixel1 << 8) | pixel2;
-            SetPixel16(x, y, pixels);
-        }
-#else
-        memcpy(screen_row + min_x, bg_row + min_x, max_x - min_x + 1);
-#endif
-    }
-#endif
 }
 
 
 void draw_grid() {
     for (int i = 0; i < GRID_HEIGHT; i++) {
         for (int j = 0; j < GRID_WIDTH; j++) {
-            int cell_value = grid[i * GRID_WIDTH + j];
+            uint8_t cell_value = grid[i * GRID_WIDTH + j];
             if (cell_value) {
                 int tetromino_type = cell_value - 1;
                 int x = j * CUBE_SIZE;
@@ -1116,12 +1051,12 @@ void draw_grid() {
 bool check_collision(int new_x, int new_y, int new_rotation) {
     int type = current_piece.type;
     int rotation = new_rotation;
-    const int32_t *piece_shape = puzzle_pieces;
+    const uint8_t *piece_shape = &puzzle_pieces[PUZZLE_PIECE_INDEX(type, rotation, 0, 0)];
 
     for (int i = 0; i < 4; i++) {
+        const uint8_t *row = piece_shape + i * 4;
         for (int j = 0; j < 4; j++) {
-			int index = PUZZLE_PIECE_INDEX(type, rotation, i, j);
-            if (piece_shape[index]) {
+            if (*(row + j)) {
                 int x = new_x + j;
                 int y = new_y + i;
 
@@ -1137,38 +1072,27 @@ bool check_collision(int new_x, int new_y, int new_rotation) {
 void clear_lines() {
     for (int i = GRID_HEIGHT - 1; i >= 0; i--) {
         bool full = true;
+        uint8_t *row = grid + i * GRID_WIDTH;
         for (int j = 0; j < GRID_WIDTH; j++) {
-            if (grid[i * GRID_WIDTH + j] == 0) {
+            if (!row[j]) {
                 full = false;
                 break;
             }
         }
         if (full) {
             score += 100;
-            #ifdef NECPCFX
             Play_PSGSample(1, 1, 0);
-            #endif
-            // Shift rows down by one
-            for (int k = i; k > 0; k--) {
-                for (int j = 0; j < GRID_WIDTH; j++) {
-                    grid[k * GRID_WIDTH + j] = grid[(k - 1) * GRID_WIDTH + j];
-                }
-            }
-            // Clear the top row
-            for (int j = 0; j < GRID_WIDTH; j++) {
-                grid[j] = 0;
-            }
-            // Since we've shifted the rows down, re-examine this row
-            i++;
+            memcpy(grid + GRID_WIDTH, grid, i * GRID_WIDTH);
+            memset(grid, 0, GRID_WIDTH);
+            i++; // Re-check the same row
         }
     }
 }
 
-
 // Function to check almost losing condition
 void check_almost_losing() {
     almost_losing = false;
-    int *row = grid + 2 * GRID_WIDTH;
+    uint8_t *row = grid + 2 * GRID_WIDTH;
     for (int j = 0; j < GRID_WIDTH; j++) {
         if (row[j]) {
             almost_losing = true;
@@ -1183,12 +1107,12 @@ void merge_piece() {
     int rotation = current_piece.rotation;
     int grid_x = current_piece.x;
     int grid_y = current_piece.y;
-    const int *piece_shape = puzzle_pieces;
+    const uint8_t *piece_shape = &puzzle_pieces[PUZZLE_PIECE_INDEX(type, rotation, 0, 0)];
 
     for (int i = 0; i < 4; i++) {
+        const uint8_t *row = piece_shape + i * 4;
         for (int j = 0; j < 4; j++) {
-            int index = PUZZLE_PIECE_INDEX(type, rotation, i, j);
-            if (piece_shape[index]) {
+            if (*(row + j)) {
                 int x = grid_x + j;
                 int y = grid_y + i;
 
@@ -1200,7 +1124,7 @@ void merge_piece() {
     }
 
     // Check for game over condition (if any block reaches the top row)
-    int *top_row = grid;
+    uint8_t *top_row = grid;
     for (int j = 0; j < GRID_WIDTH; j++) {
         if (top_row[j]) {
             game_over = true;
@@ -1218,11 +1142,8 @@ uint8_t color = 0;
 // Function to draw text
 void PrintText(const char* str, int x, int y) {
 	//print_at(x/8, y/8, 12, str);
-#ifdef NECPCFX
+
     print_string(str, 255, 0, x, y, (int8_t*)framebuffer_game);
-#else
-    print_string(str, 255, 0, x, y, screen->pixels);
-#endif
 }
 
 // Game States
@@ -1239,17 +1160,17 @@ typedef enum {
 GameState game_state = GAME_STATE_TITLE;
 
 // Uninitiliazed memory
-static unsigned long int mynext;
+static unsigned long int next;
 
 static inline int myrand(void)
 {
-    mynext = mynext * 1103515245 + 12345;
-    return (unsigned int)(mynext/65536) % 32768;
+    next = next * 1103515245 + 12345;
+    return (unsigned int)(next/65536) % 32768;
 }
 
 static inline void mysrand(unsigned int seed)
 {
-    mynext = seed;
+    next = seed;
 }
 
 // Function to spawn a new piece in Arcade Mode
@@ -1287,7 +1208,7 @@ int puzzle_piece_index = 0;
 #define ROW_ZEROS 0,0,0,0,0,0,0,0,0,0,0,0
 
 // All initial grids merged into a single array
-const int initial_grids[MAX_PUZZLES * GRID_HEIGHT * GRID_WIDTH] = {
+const uint8_t initial_grids[MAX_PUZZLES * GRID_HEIGHT * GRID_WIDTH] = {
     // Puzzle 1 grid data
     // Rows 0-9: all zeros
     ROW_ZEROS, // Row 0
@@ -1372,28 +1293,40 @@ void initialize_puzzles() {
     for (puzzle_index = 0; puzzle_index < MAX_PUZZLES; puzzle_index++) {
         // Clear the current puzzle structure
         memset(&puzzles[puzzle_index], 0, sizeof(Puzzle));
+
+        // Initialize num_pieces and piece_sequence based on the puzzle index
+        switch (puzzle_index) {
+            case 0:
+                puzzles[puzzle_index].num_pieces = 1;
+                puzzles[puzzle_index].piece_sequence[0] = 1; // 'O' piece
+                break;
+            case 1:
+                puzzles[puzzle_index].num_pieces = 1;
+                puzzles[puzzle_index].piece_sequence[0] = 2; // 'T' piece
+                puzzles[puzzle_index].piece_sequence[1] = 0; // 'I' piece
+                break;
+            case 2:
+                puzzles[puzzle_index].num_pieces = 4;
+                puzzles[puzzle_index].piece_sequence[0] = 0; // 'I' piece
+                puzzles[puzzle_index].piece_sequence[1] = 0; // 'I' piece
+                puzzles[puzzle_index].piece_sequence[2] = 0; // 'I' piece
+                puzzles[puzzle_index].piece_sequence[3] = 1; // 'O' piece
+                break;
+            case 3:
+                puzzles[puzzle_index].num_pieces = 5;
+                puzzles[puzzle_index].piece_sequence[0] = 2; // 'T' piece
+                puzzles[puzzle_index].piece_sequence[1] = 0; // 'I' piece
+                puzzles[puzzle_index].piece_sequence[2] = 0; // 'I' piece
+                puzzles[puzzle_index].piece_sequence[3] = 0; // 'I' piece
+                puzzles[puzzle_index].piece_sequence[4] = 0; // 'I' piece
+                break;
+            // Additional puzzles can be added here...
+            default:
+                // Handle any additional puzzles or default case
+                break;
+        }
     }
-	puzzles[0].num_pieces = 1;
-	puzzles[0].piece_sequence[0] = 1; // 'O' piece
-
-	puzzles[1].num_pieces = 2;
-	puzzles[1].piece_sequence[0] = 2; // 'T' piece
-	puzzles[1].piece_sequence[1] = 0; // 'I' piece
-
-	puzzles[2].num_pieces = 4;
-	puzzles[2].piece_sequence[0] = 0; // 'I' piece
-	puzzles[2].piece_sequence[1] = 0; // 'I' piece
-	puzzles[2].piece_sequence[2] = 0; // 'I' piece
-	puzzles[2].piece_sequence[3] = 1; // 'O' piece
-
-	puzzles[3].num_pieces = 5;
-	puzzles[3].piece_sequence[0] = 2; // 'T' piece
-	puzzles[3].piece_sequence[1] = 0; // 'I' piece
-	puzzles[3].piece_sequence[2] = 0; // 'I' piece
-	puzzles[3].piece_sequence[3] = 0; // 'I' piece
-	puzzles[3].piece_sequence[4] = 0; // 'I' piece
 }
-
 
 
 
@@ -1448,7 +1381,7 @@ void load_puzzle(int index) {
 	memcpy(
 		grid,
 		&initial_grids[index * GRID_HEIGHT * GRID_WIDTH],
-		GRID_HEIGHT * GRID_WIDTH * sizeof(int)
+		GRID_HEIGHT * GRID_WIDTH * sizeof(grid)
 	);
    // memcpy(grid, puzzle->initial_grid, sizeof(grid));
     puzzle_piece_index = 0;
@@ -1618,11 +1551,9 @@ void update_previous_buttons() {
     // Store the previous frame's input state
     oldpaddata = paddata;
 
-#ifdef NECPCFX
 	padtype = eris_pad_type(0);
 	paddata = eris_pad_read(0);
-#endif
-
+	
     prev_a_button = a_button;
     prev_b_button = b_button;
     prev_up_button = up_button;
@@ -1647,7 +1578,6 @@ int title_cube_min_position = -64; // Maximum movement to the left;
 int angle_x = 0; // Slight angle to see the top
 int angle_y = 0;
 
-#ifdef NECPCFX
 #define WAIT_CD 0x800
 #define CDDA_SILENT 0
 #define CDDA_NORMAL 0x03
@@ -1730,7 +1660,7 @@ void cd_pausectrl(u8 resume)
 {
 	u8 scsicmd10[10];
 	
-	eris_low_scsi_reset();
+	//eris_low_scsi_reset();
 	
 	if (resume > 1) resume = 1; // single bit; top 7 bits reserved
 	scsicmd10[0] = 0x47; // operation code PAUSE RESUME
@@ -1761,30 +1691,19 @@ void cd_pausectrl(u8 resume)
 	eris_low_scsi_status();	
 }
 
-#endif
-
-extern void fadeOutPalette(unsigned short pal[], int sizep);
-
-int mus = 0;
 
 int alt_state = GAME_STATE_TITLE;
 void Game_Switch(int state)
 {
 	alt_state = state;
-#ifdef NECPCFX
 	Clear_VDC(0);
-#endif
-
-	mus++;
-
+	
 	switch(state)
 	{
 		case GAME_STATE_TITLE:
-			Empty_Palette();
-		
 			z_counter = 0;
 			title_cube_position_z = 0;
-#ifdef NECPCFX
+			
 #ifdef CART_AUDIO
 			Reset_ADPCM();
 			Initialize_ADPCM(ADPCM_RATE_32000);
@@ -1794,47 +1713,29 @@ void Game_Switch(int state)
 			eris_low_adpcm_set_volume(1, 63, 63);
 			Play_ADPCM(1, ADPCM_OFFSET, sizeof(musicvox), 1, ADPCM_RATE_8000);
 #else
-			//cd_pausectrl(1);
+			cd_pausectrl(0);
 			cd_start_track(2);
 			cd_end_track(3,CDDA_LOOP);
-			eris_low_cdda_set_volume(63,63);
 #endif
 			my_memcpy32(framebuffer_game, bg_title, SCREEN_WIDTH * SCREEN_HEIGHT);
-			
+
 			eris_king_set_kram_write(0, 1);
 			king_kram_write_buffer(framebuffer_game, SCREEN_WIDTH * SCREEN_HEIGHT);
-			vsync(0);
-			
-			
-			
-			fadeInPalette(gamepal, 256);
-			
-#else
-			memcpy(screen->pixels, bg_title, SCREEN_WIDTH * SCREEN_HEIGHT);
-			SDL_Flip(screen);
-#endif
+				
 		break;
 		case GAME_STATE_MENU:
-#ifdef NECPCFX
 			my_memcpy32(framebuffer_game, bg_title, SCREEN_WIDTH * SCREEN_HEIGHT);
+
 			eris_king_set_kram_write(0, 1);
 			king_kram_write_buffer(framebuffer_game, SCREEN_WIDTH * SCREEN_HEIGHT);
-#else
-			memcpy(screen->pixels, bg_title, SCREEN_WIDTH * SCREEN_HEIGHT);
-			// Draw menu options
-			PrintText("Select Mode", SCREEN_WIDTH_HALF - 50, 160);
-#endif
 			
 			// Draw menu options
 			PrintText("Select Mode", SCREEN_WIDTH_HALF - 50, 160);
 		break;
 		case GAME_STATE_ARCADE:
-
-#ifdef NECPCFX
-			fadeOutPalette(gamepal, 256);
 			eris_low_cdda_set_volume(0,0);
 			Play_PSGSample(3, 3, 0);
-
+		
 			//fadeOutPalette(gamepal);
 			
 #ifdef CART_AUDIO
@@ -1846,28 +1747,9 @@ void Game_Switch(int state)
 			eris_low_adpcm_set_volume(1, 63, 63);
 			Play_ADPCM(1, ADPCM_OFFSET, sizeof(race_music), 1, ADPCM_RATE_4000);*/
 #else
-
-			mus = myrand() % 2;
-			if (mus > 0)
-			{
-				cd_start_track(3);
-				cd_end_track(4,CDDA_LOOP);		
-			}
-			else
-			{
-				cd_start_track(5);
-				cd_end_track(6,CDDA_LOOP);	
-				mus = 0;	
-			}
+			cd_start_track(3);
+			cd_end_track(4,CDDA_LOOP);		
 			eris_low_cdda_set_volume(63/2,63/2);
-			my_memcpy32(framebuffer_game, bg_game, SCREEN_WIDTH * SCREEN_HEIGHT);
-#endif
-			eris_king_set_kram_write(0, 1);
-			king_kram_write_buffer(framebuffer_game, SCREEN_WIDTH * SCREEN_HEIGHT);
-			fadeInPalette(gamepal, 256);
-
-#else
-			memcpy(screen->pixels, bg_game, SCREEN_WIDTH * SCREEN_HEIGHT);
 #endif
 			drop_interval = 150;
 		
@@ -1881,23 +1763,17 @@ void Game_Switch(int state)
 			force_redraw = 1;
 			backtitle = 0;
 
-			
+			my_memcpy32(framebuffer_game, bg_game, SCREEN_WIDTH * SCREEN_HEIGHT);
 		break;
 		case GAME_STATE_PUZZLE:
-#ifdef NECPCFX
-			fadeOutPalette(gamepal, 256);
+		
 			eris_low_cdda_set_volume(63/2,63/2);
 		
 			cd_start_track(4);
 			cd_end_track(5,CDDA_LOOP);
 			
 			my_memcpy32(framebuffer_game, bg_game, SCREEN_WIDTH * SCREEN_HEIGHT);
-			eris_king_set_kram_write(0, 1);
-			king_kram_write_buffer(framebuffer_game, SCREEN_WIDTH * SCREEN_HEIGHT);
-			fadeInPalette(gamepal, 256);
-#else
-			memcpy(screen->pixels, bg_game, SCREEN_WIDTH * SCREEN_HEIGHT);
-#endif
+			
 			drop_interval = 150;
 			
 			// Initialize Puzzle Mode
@@ -1912,7 +1788,6 @@ void Game_Switch(int state)
 			draw_grid();
 
 		break;
-#ifdef NECPCFX
 		case GAME_STATE_GAME_OVER_ARCADE:
 			eris_low_cdda_set_volume(0,0);
 			Play_PSGSample(4, 4, 0);
@@ -1926,23 +1801,12 @@ void Game_Switch(int state)
 		case GAME_STATE_CREDITS:
 			memset(framebuffer_game, 0, SCREEN_WIDTH * SCREEN_HEIGHT);
 		break;
-#else
-		case GAME_STATE_GAME_OVER_ARCADE:
-			memset(screen->pixels, 0, SCREEN_WIDTH * SCREEN_HEIGHT);
-		break;
-		case GAME_STATE_GAME_OVER_PUZZLE:
-			memset(screen->pixels, 0, SCREEN_WIDTH * SCREEN_HEIGHT);
-		break;
-		case GAME_STATE_CREDITS:
-			memset(screen->pixels, 0, SCREEN_WIDTH * SCREEN_HEIGHT);
-		break;
-#endif
 	}
 }
 
 void draw_grid_partial() {
     // Define the area around the current piece to redraw
-    const int REDRAW_MARGIN = 4;  // Adjust this value based on your needs
+    const int REDRAW_MARGIN = 3;  // Adjust this value based on your needs
 
     int start_y = max(0, current_piece.y - REDRAW_MARGIN);
     int end_y = min(GRID_HEIGHT - 1, current_piece.y + REDRAW_MARGIN);
@@ -1952,7 +1816,7 @@ void draw_grid_partial() {
     // Only draw grid cells within the defined area
     for (int i = start_y; i <= end_y; i++) {
         for (int j = start_x; j <= end_x; j++) {
-            int cell_value = grid[i * GRID_WIDTH + j];
+            uint8_t cell_value = grid[i * GRID_WIDTH + j];
             if (cell_value) {
                 int tetromino_type = cell_value - 1;
                 int x = j * CUBE_SIZE;
@@ -1973,50 +1837,8 @@ void draw_grid_partial() {
     }
 }
 
-#ifndef NECPCFX
-// Function to load a background into a given array
-bool load_background(const char* filename, uint8_t* bg_array) {
-    SDL_Surface* bg_surface = IMG_Load(filename);
-    if (!bg_surface) {
-        fprintf(stderr, "Unable to load %s: %s\n", filename, IMG_GetError());
-        return false;
-    }
-    // Verify dimensions
-    if (bg_surface->w != SCREEN_WIDTH || bg_surface->h != SCREEN_HEIGHT) {
-        fprintf(stderr, "%s must be %d x %d pixels.\n", filename, SCREEN_WIDTH, SCREEN_HEIGHT);
-        SDL_FreeSurface(bg_surface);
-        return false;
-    }
-    // Verify 8-bit
-    if (bg_surface->format->BitsPerPixel != 8) {
-        fprintf(stderr, "%s must be an 8-bit image.\n", filename);
-        SDL_FreeSurface(bg_surface);
-        return false;
-    }
-    // Verify palette matches screen's palette
-    if (!bg_surface->format->palette) {
-        fprintf(stderr, "%s does not have a palette.\n", filename);
-        SDL_FreeSurface(bg_surface);
-        return false;
-    }
-    if (memcmp(bg_surface->format->palette->colors, screen->format->palette->colors, sizeof(SDL_Color) * screen->format->palette->ncolors) != 0) {
-        fprintf(stderr, "%s palette does not match screen palette.\n", filename);
-        SDL_FreeSurface(bg_surface);
-        return false;
-    }
-    // Copy pixels
-    memcpy(bg_array, bg_surface->pixels, SCREEN_WIDTH * SCREEN_HEIGHT * sizeof(uint8_t));
-    SDL_FreeSurface(bg_surface);
-    return true;
-}
-
-
-#endif
-
-
-int Init_video_game()
+void Init_video_game()
 {
-#ifdef NECPCFX
 #ifdef CART_AUDIO
 	Reset_ADPCM();
 	Initialize_ADPCM(ADPCM_RATE_32000);
@@ -2043,75 +1865,11 @@ int Init_video_game()
 	Load_PSGSample_RAM(go_sfx, 4, sizeof(go_sfx));
 	
 	cd_pausectrl(0);
-#else
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        fprintf(stderr, "SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
-        return 1;
-    }
-    
-    // Load texture
-    texture_surface = IMG_Load("textures.png");
-    if (!texture_surface) {
-        fprintf(stderr, "Unable to load texture: %s\n", IMG_GetError());
-        SDL_Quit();
-        return 1;
-    }
-
-    // Ensure texture is 32x224 pixels
-    if (texture_surface->w != 32 || texture_surface->h != 224) {
-        fprintf(stderr, "Texture must be 32x224 pixels.\n");
-        SDL_FreeSurface(texture_surface);
-        SDL_Quit();
-        return 1;
-    }
-
-    // Set the video mode to 8bpp and apply the texture's palette to the screen
-    screen = SDL_SetVideoMode(SCREEN_WIDTH, SCREEN_HEIGHT, 8, SDL_SWSURFACE);
-    if (!screen) {
-        fprintf(stderr, "SDL_SetVideoMode failed: %s\n", SDL_GetError());
-        SDL_FreeSurface(texture_surface);
-        SDL_Quit();
-        return 1;
-    }
-
-    // Apply the texture's palette to the screen
-    if (texture_surface->format->palette) {
-        SDL_SetPalette(screen, SDL_LOGPAL | SDL_PHYSPAL, texture_surface->format->palette->colors, 0, texture_surface->format->palette->ncolors);
-    } else {
-        fprintf(stderr, "Texture does not have a palette.\n");
-        SDL_FreeSurface(texture_surface);
-        SDL_Quit();
-        return 1;
-    }
-
-    // Copy texture pixels (palette indices)
-    memcpy(texture, texture_surface->pixels, 32 * 224 * sizeof(uint8_t));
-
-    SDL_FreeSurface(texture_surface);
-
-    // Load background images
-    if (!load_background("background256.png", bg_game)) {
-        SDL_Quit();
-        return 1;
-    }
-    
-    // Load background images
-    if (!load_background("title.png", bg_title)) {
-        SDL_Quit();
-        return 1;
-    }
-    
-    return 0;
-#endif
-	
 }
 
 int main() 
 {
-	if (Init_video_game() == 1)
-	{
-		return 0;
-	}
+	Init_video_game();
 
     // Initialize game state
     memset(grid, 0, sizeof(grid));
@@ -2122,16 +1880,10 @@ int main()
 
     // Initialize puzzles
     initialize_puzzles();
-	int running = 1;
-	int last_tick = 0;
-	int last_drop = 0;
-#ifndef NECPCFX
-    SDL_Event event;
-	last_tick = SDL_GetTicks();
-	last_drop = SDL_GetTicks();
-    Uint32 drop_interval = 500; // Drop every 500ms
-#endif
 
+    int running = 1;
+    int32_t last_tick = 0;
+    int32_t last_drop = 0;
     int32_t current_tick = 0;
     int32_t game_tick = 0;
 
@@ -2153,9 +1905,8 @@ int main()
 	right_button = 0;
 	hold_down_button = 0;
 
-    while (running) 
+    while (1) 
     {
-#ifdef NECPCFX
 		current_tick++;
 		game_tick++;
 		
@@ -2199,87 +1950,7 @@ int main()
         {
 			start_button = 1;
 		}
-#else
-        Uint32 current_tick = SDL_GetTicks();
-        Uint32 delta_time = current_tick - last_tick;
-        last_tick = current_tick;
-        
-        update_previous_buttons();
-
-        // Handle events
-        while (SDL_PollEvent(&event)) 
-        {
-            switch (event.type) {
-                case SDL_QUIT:
-                    running = 0;
-                    break;
-				case SDL_KEYDOWN:
-					switch (event.key.keysym.sym) {
-						case SDLK_SPACE:
-							a_button = 1;
-							break;
-						case SDLK_RETURN:
-							start_button = 1;
-							break;
-						case SDLK_ESCAPE:
-							running = 0;
-							break;
-						case SDLK_UP:
-							up_button = 1;
-							break;
-						case SDLK_DOWN:
-							down_button = 1;
-							break;
-						case SDLK_LEFT:
-							left_button = 1;
-							break;
-						case SDLK_RIGHT:
-							right_button = 1;
-							break;
-						case SDLK_j:
-							b_button = 1;
-							break;
-						case SDLK_k:
-							select_button = 1;
-							break;
-					}
-					break;
-				case SDL_KEYUP:
-					switch (event.key.keysym.sym) {
-						case SDLK_SPACE:
-							a_button = 0;
-							break;
-						case SDLK_RETURN:
-							start_button = 0;
-							break;
-						case SDLK_UP:
-							up_button = 0;
-							break;
-						case SDLK_DOWN:
-							down_button = 0;
-							break;
-						case SDLK_LEFT:
-							left_button = 0;
-							break;
-						case SDLK_RIGHT:
-							right_button = 0;
-							break;
-						case SDLK_j:
-							b_button = 0;
-							break;
-						case SDLK_k:
-							select_button = 0;
-							break;
-					}
-					break;
-                default:
-                    break;
-            }
-        }
-#endif
 		
-		
-#ifdef NECPCFX
 		// Handle game states
         switch (game_state) 
         {
@@ -2329,7 +2000,7 @@ int main()
 					blink_counter = 0;
 				}
 				
-				if (BUTTON_PRESSED(start_button)) {
+				if (start_button) {
 					Game_Switch(GAME_STATE_MENU);
 				}
 				
@@ -2591,275 +2262,6 @@ int main()
         
 		game_state = alt_state;
 		++nframe;
-#else
-        // Handle game states
-        switch (game_state) {
-			case GAME_STATE_TITLE:
-				// Update rotation angles
-				title_cube_rotation_x = (title_cube_rotation_x + 1) & ANGLE_MASK;
-				title_cube_rotation_y = (title_cube_rotation_y + 2) & ANGLE_MASK;
-				title_cube_rotation_z = (title_cube_rotation_z + 3) & ANGLE_MASK;
-				
-                // Blinking text
-                blink_counter = (blink_counter + 1) % 60;
-                blink_on = blink_counter < 30;
-                
-                if (title_cube_position_z < 24)
-                {
-					z_counter++;
-					if (z_counter > 2)
-					{
-						title_cube_position_z++;
-						z_counter = 0;
-					}
-				}
-				else
-				{
-					// Update cube position
-					title_cube_position_x += title_cube_move_direction * title_cube_move_speed;
-					if (title_cube_position_x > title_cube_max_position) {
-						title_cube_position_x = title_cube_max_position;
-						title_cube_move_direction = -1; // Change direction to left
-					} else if (title_cube_position_x < title_cube_min_position) {
-						title_cube_position_x = title_cube_min_position;
-						title_cube_move_direction = 1; // Change direction to right
-					}	
-				}
-				
-				memcpy(screen->pixels + (256 * 90), bg_title + (256 * 90), SCREEN_WIDTH * 100); // For portion covered by cube
-				
-				memcpy(screen->pixels + (256 * 195), bg_title + (256 * 195), SCREEN_WIDTH * 12); // For blinking text
-
-				// Draw rotating cube with updated position
-				draw_title_cube(title_cube_rotation_x, title_cube_rotation_y, title_cube_rotation_z, title_cube_position_x, -20, title_cube_position_z);
-
-                // Draw blinking "Press Start to play"
-                if (blink_on) {
-                    PrintText("Press Start to Play", SCREEN_WIDTH_HALF - 80, SCREEN_HEIGHT - 45);
-                }
-                
-                PrintText("(C) Gameblabla 2024", SCREEN_WIDTH_HALF - 80, SCREEN_HEIGHT - 20);
-
-				if (BUTTON_PRESSED(start_button) || BUTTON_PRESSED(a_button)) {
-					Game_Switch(GAME_STATE_MENU);
-				}
-
-                SDL_Flip(screen);
-                SDL_Delay(16);
-
-                break;
-            case GAME_STATE_MENU:
-				if (BUTTON_PRESSED(up_button)) {
-					menu_selection--;
-				}
-				if (BUTTON_PRESSED(down_button)) {
-					menu_selection++;
-				}
-
-				if (menu_selection < 0) menu_selection = 0;
-				if (menu_selection > 1) menu_selection = 2;
-            
-                // Only update text portion
-                memcpy(screen->pixels + (SCREEN_WIDTH * 180), bg_title + (SCREEN_WIDTH * 180), SCREEN_WIDTH * 48);
-
-				switch(menu_selection)
-				{
-					case 0:
-						PrintText("> Arcade Mode", SCREEN_WIDTH_HALF - 50, 180);
-						PrintText("  Puzzle Mode", SCREEN_WIDTH_HALF - 50, 200);
-						PrintText("  Credits", SCREEN_WIDTH_HALF - 50, 220);
-					break;
-					case 1:
-
-						PrintText("  Arcade Mode", SCREEN_WIDTH_HALF - 50, 180);
-						PrintText("> Puzzle Mode", SCREEN_WIDTH_HALF - 50, 200);
-						PrintText("  Credits", SCREEN_WIDTH_HALF - 50, 220);
-						
-					break;
-					case 2:
-
-						PrintText("  Arcade Mode", SCREEN_WIDTH_HALF - 50, 180);
-						PrintText("  Puzzle Mode", SCREEN_WIDTH_HALF - 50, 200);
-						PrintText("> Credits", SCREEN_WIDTH_HALF - 50, 220);
-						
-					break;
-				}
-
-                SDL_Flip(screen);
-                SDL_Delay(16);
-                
-				if (BUTTON_PRESSED(start_button) || BUTTON_PRESSED(a_button)) {
-					if (menu_selection == 0) {
-						Game_Switch(GAME_STATE_ARCADE);
-					} else if (menu_selection == 1) {
-						Game_Switch(GAME_STATE_PUZZLE);
-					}
-				}
-                
-                break;
-            case GAME_STATE_ARCADE:
-            case GAME_STATE_PUZZLE:
-				int previous_piece_x = current_piece.x;
-				int previous_piece_y = current_piece.y;
-            
-				if (BUTTON_PRESSED(a_button)) {
-					if (game_over) {
-						Game_Switch(GAME_STATE_TITLE);
-					}
-				}
-				if (!game_over) {
-					if (BUTTON_PRESSED(right_button)) {
-						if (!check_collision(current_piece.x - 1, current_piece.y, current_piece.rotation))
-						{
-							current_piece.x--; // Its reversed due to how pieces are drawn
-							force_redraw = 1;
-						}
-					}
-					if (BUTTON_PRESSED(left_button)) {
-						if (!check_collision(current_piece.x + 1, current_piece.y, current_piece.rotation))
-						{
-							current_piece.x++; // Its reversed due to how pieces are drawn
-							force_redraw = 1;
-						}
-					}
-					if (BUTTON_PRESSED(down_button)) {
-						if (!check_collision(current_piece.x, current_piece.y + 1, current_piece.rotation))
-						{
-							current_piece.y++;
-							force_redraw = 1;
-						}
-					}
-					if (BUTTON_PRESSED(up_button)) {
-						int new_rotation = (current_piece.rotation + 1) & 3;
-						if (!check_collision(current_piece.x, current_piece.y, new_rotation))
-						{
-							current_piece.rotation = new_rotation;
-							force_redraw = 1;
-						}
-					}
-				}
-
-                // Reset face count before collecting faces
-                face_count = 0;
-            
-                // Automatic drop
-                if (!game_over && current_tick - last_drop > drop_interval) 
-                {
-                    last_drop = current_tick;
-                    if (!check_collision(current_piece.x, current_piece.y + 1, current_piece.rotation)) {
-                        current_piece.y++;
-                        force_redraw = 1;
-                    } 
-                    else 
-                    {
-                        merge_piece();
-                        if (!game_over) {
-							memcpy(screen->pixels, bg_game, SCREEN_WIDTH * SCREEN_HEIGHT);
-                            clear_lines();
-
-                            // After merging and clearing lines, check almost losing
-                            check_almost_losing();
-                            if (game_state == GAME_STATE_ARCADE) {
-                                spawn_piece();
-                            } else if (game_state == GAME_STATE_PUZZLE) {
-                                spawn_piece_puzzle();
-                            }
-                        } else {
-                            if (game_state == GAME_STATE_ARCADE) {
-								Game_Switch(GAME_STATE_GAME_OVER_ARCADE);
-                            } else if (game_state == GAME_STATE_PUZZLE) {
-								Game_Switch(GAME_STATE_GAME_OVER_PUZZLE);
-                            }
-                        }
-                        if (backtitle == false)
-                        {
-							// Collect faces from grid and current piece
-							draw_grid();
-							force_redraw = 1;
-						}
-                    }
-                }
-
-
-				// Before calling the functions
-				if (force_redraw) 
-				{
-#ifdef FORCE_FULLSCREEN_DRAWS // For platforms that are fast enough, this can avoid some visual glitches
-					memcpy(screen->pixels, bg_game, SCREEN_WIDTH * SCREEN_HEIGHT);
-					draw_current_piece();
-					draw_grid();
-#else
-					undraw_previous_piece();
-					draw_current_piece();
-					if (force_redraw_puzzle)
-					{
-						draw_grid();
-					}
-					else
-					{
-						// Only update the grid if the piece has moved
-						draw_grid_partial();
-					}
-			
-#endif
-					// Draw sorted faces
-					draw_sorted_faces();
-					
-
-					// Display score
-					char score_text[32];
-					sprintf(score_text, "%d", score);
-					PrintText(score_text, 10, 10);
-
-					if (game_state == GAME_STATE_PUZZLE) {
-						// Display remaining pieces
-						char pieces_text[32];
-						int remaining_pieces = puzzles[current_puzzle_index].num_pieces - puzzle_piece_index;
-						sprintf(pieces_text, "Pieces Left: %d", remaining_pieces);
-						PrintText(pieces_text, 10, 30);
-					}
-
-					// Update previous position for next check
-					previous_piece_x = current_piece.x;
-					previous_piece_y = current_piece.y;
-					force_redraw = 0;
-				}
-
-				SDL_Flip(screen);
-				SDL_Delay(16);
-
-                break;
-            case GAME_STATE_GAME_OVER_ARCADE:
-            case GAME_STATE_GAME_OVER_PUZZLE:
-				if (BUTTON_PRESSED(start_button) || BUTTON_PRESSED(a_button)) {
-					Game_Switch(GAME_STATE_TITLE);
-				}
-            
-                // Clear screen
-                memset(screen->pixels, 0, SCREEN_WIDTH * SCREEN_HEIGHT);
-
-                // Draw grid
-                face_count = 0;
-                draw_grid(angle_x, angle_y);
-                // Draw sorted faces
-                draw_sorted_faces();
-
-                // Draw game over texts
-                PrintText("Game Over!", SCREEN_WIDTH_HALF - 40, SCREEN_HEIGHT_HALF - 10);
-                PrintText("Press Start to return", SCREEN_WIDTH_HALF - 80, SCREEN_HEIGHT_HALF + 10);
-                SDL_Flip(screen);
-                SDL_Delay(16);
-                break;
-            case GAME_STATE_CREDITS:
-
-            break;
-            default:
-                break;
-        }
-        
-		game_state = alt_state;
-#endif
-
     }
 
     return 0;

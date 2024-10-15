@@ -30,8 +30,8 @@ int samplepsg_play[SAMPLES_PSG_NUMBER];
 int samplepsg_size[SAMPLES_PSG_NUMBER];
 int samplepsg_loop[SAMPLES_PSG_NUMBER];
 int samplepsg_ch[SAMPLES_PSG_NUMBER];
-#define BG_KRAM_PAGE 0
-#define ADPCM_KRAM_PAGE 1
+#define BG_KRAM_PAGE 1
+#define ADPCM_KRAM_PAGE 0
 
 u16 microprog[16];
 
@@ -233,6 +233,111 @@ void Upload_Palette(unsigned short pal[], int sizep)
 }
 
 
+#define MAX_BRIGHTNESS 16
+unsigned short adjusted_pal[256];
+unsigned int original_Y[256];
+
+
+void Empty_Palette()
+{
+	int i;
+	for(i=0;i<256;i++)
+	{
+		eris_tetsu_set_palette(i, 0x0888);
+	}
+}
+
+    
+void Adjust_Palette_Brightness_YUV(unsigned short pal[], unsigned short adjusted_pal[], int sizep, int brightness_factor, int max_brightness)
+{
+    int i;
+    for (i = 0; i < sizep; i++)
+    {
+        unsigned short pal_entry = pal[i];
+        unsigned int Y = (pal_entry >> 8) & 0xFF;   // Extract Y component
+        unsigned int U = (pal_entry >> 4) & 0x0F;   // Extract U component
+        unsigned int V = pal_entry & 0x0F;          // Extract V component
+
+        // Adjust brightness (Y component)
+        unsigned int Y_adjusted = (Y * brightness_factor) / max_brightness;
+
+        // Clamp Y to 8 bits
+        if (Y_adjusted > 0xFF) Y_adjusted = 0xFF;
+
+        // Reconstruct the palette entry
+        adjusted_pal[i] = (Y_adjusted << 8) | (U << 4) | V;
+    }
+}
+
+void fadeOutPalette(unsigned short pal[], int sizep)
+{
+    int step;
+
+    int i;
+
+    // Store original Y values
+    for (i = 0; i < sizep; i++)
+    {
+        unsigned short pal_entry = pal[i];
+        original_Y[i] = (pal_entry >> 8) & 0xFF; // Extract Y component
+    }
+
+    for (step = MAX_BRIGHTNESS; step >= 0; step--)
+    {
+        for (i = 0; i < sizep; i++)
+        {
+            unsigned short pal_entry = pal[i];
+            unsigned int U = (pal_entry >> 4) & 0x0F;   // U component
+            unsigned int V = pal_entry & 0x0F;          // V component
+
+            // Adjust Y component
+            unsigned int Y_adjusted = (original_Y[i] * step) / MAX_BRIGHTNESS;
+
+            // Reconstruct the palette entry
+            adjusted_pal[i] = (Y_adjusted << 8) | (U << 4) | V;
+        }
+        Upload_Palette(adjusted_pal, sizep);
+        vsync(0);
+    }
+    
+    Empty_Palette();
+    vsync(0);
+}
+
+void fadeInPalette(unsigned short pal[], int sizep)
+{
+    int step;
+
+    int i;
+
+    // Store original Y values
+    for (i = 0; i < sizep; i++)
+    {
+        unsigned short pal_entry = pal[i];
+        original_Y[i] = (pal_entry >> 8) & 0xFF; // Extract Y component
+    }
+
+    for (step = 0; step <= MAX_BRIGHTNESS; step++)
+    {
+        for (i = 0; i < sizep; i++)
+        {
+            unsigned short pal_entry = pal[i];
+            unsigned int U = (pal_entry >> 4) & 0x0F;   // U component
+            unsigned int V = pal_entry & 0x0F;          // V component
+
+            // Adjust Y component
+            unsigned int Y_adjusted = (original_Y[i] * step) / MAX_BRIGHTNESS;
+
+            // Reconstruct the palette entry
+            adjusted_pal[i] = (Y_adjusted << 8) | (U << 4) | V;
+        }
+        Upload_Palette(adjusted_pal, sizep);
+        vsync(0);
+    }
+}
+
+
+
 void Clear_BG0(int bpp)
 {
 	int i, space;
@@ -325,7 +430,7 @@ void Reset_ADPCM()
     out16(0x604, 0);
 }
 
-void Play_ADPCM(int channel, int start_adress, int sizet, unsigned char loop, int freq)
+void Play_ADPCM(int channel, int start_adress, int sizet, bool loop, int freq)
 {
 	//eris_king_set_kram_pages(0, BG_KRAM_PAGE, 0, ADPCM_KRAM_PAGE);
 	eris_king_set_kram_read(start_adress, 1);
@@ -393,7 +498,7 @@ void Play_ADPCM(int channel, int start_adress, int sizet, unsigned char loop, in
     switch (freq) {
         case ADPCM_RATE_16000: playCommand |= 4; break;
         case ADPCM_RATE_8000: playCommand |= 8; break;
-        case ADPCM_RATE_4000: playCommand |= 16; break;
+        case ADPCM_RATE_4000: playCommand |= 12; break;
         // Add more cases here for other frequencies
     }
 
@@ -419,6 +524,11 @@ void Load_PSGSample(u32 lba, int numb, int size_sample)
 	eris_cd_read(lba, samplepsg_buf[numb], size_sample);
 }
 
+void Load_PSGSample_RAM(char* buf, int numb, int size_sample)
+{
+	samplepsg_size[numb] = size_sample;
+	memcpy(samplepsg_buf[numb], buf, size_sample);
+}
 
 void Stop_PSGSample(int ch, int sample_numb, int loop)
 {
