@@ -29,7 +29,7 @@ FIXROM = /usr/bin/env python3 ./tools/fixrom.py # Change to "python" if necessar
 
 # File/dir locations
 SRCDIR = ./src
-INCDIR = ./include
+INCDIR = ./include/casloopy
 OBJDIR = ./obj
 ROM    = ./rom.bin
 
@@ -42,13 +42,13 @@ LIBS =
 LDSCRIPT = ./tools/loopy.ld
 
 # Source/object lists
-SRCS_C = $(wildcard $(SRCDIR)/*.c)
+SRCS_C = src/main.c src/casloopy.c src/common.c src/crt0.c src/font_drawing.c
 OBJS_C = $(patsubst $(SRCDIR)/%.c,$(OBJDIR)/%.o,$(SRCS_C))
-SRCS_S = $(wildcard $(SRCDIR)/*.s)
+SRCS_S = src/header.s src/startup.s
 OBJS_S = $(patsubst $(SRCDIR)/%.s,$(OBJDIR)/%.o,$(SRCS_S))
 
-CFLAGS  = $(OPTIMIZE) 
-CFLAGS += -m1 -mrenesas
+CFLAGS  = $(OPTIMIZE)
+CFLAGS += -m1 -mrenesas -DPLATFORM=3
 CFLAGS += -ffreestanding
 CFLAGS += -falign-functions=4 -ffunction-sections -fdata-sections
 CFLAGS += -fomit-frame-pointer -fno-asynchronous-unwind-tables -fno-unwind-tables
@@ -69,7 +69,7 @@ all: rom
 rom: $(ROM)
 
 %.elf:
-	$(CC) $(LDFLAGS) $^ -o $@
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
 
 %.bin: %.elf
 	$(OBJ) -O binary $< $@

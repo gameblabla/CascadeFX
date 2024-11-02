@@ -20,6 +20,13 @@
 #include <eris/low/scsi.h>
 #include <eris/low/soundbox.h>
 
+#define WAIT_CD 0x800
+#define CDDA_SILENT 0
+#define CDDA_NORMAL 0x03
+#define CDDA_LOOP 0x04
+
+
+extern int nframe;
 
 extern u16 microprog[16];
 
@@ -93,5 +100,11 @@ extern void initTimer();
 extern void Timer_Sample();
 extern int GetSeconds();
 extern void Reset_ZDA();
+
+/* CD */
+
+extern void cd_start_track(u8 start);
+extern void cd_end_track(u8 end, u8 loop);
+extern void cd_pausectrl(u8 resume);
 
 #endif

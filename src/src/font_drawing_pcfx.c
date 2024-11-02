@@ -3,15 +3,11 @@
 #include <stdint.h>
 #include "font_drawing.h"
 #include "font_menudata.h"
+#include "defines.h"
 
-#define HOST_WIDTH_RESOLUTION 256
-#define HOST_HEIGHT_RESOLUTION 240
 
 #define BSWAP16(x) ((((x) & 0xFF00) >> 8) | (((x) & 0x00FF) << 8))
 
-
-#define SCREEN_WIDTH 256
-#define SCREEN_HEIGHT 240
 extern int16_t framebuffer_game[SCREEN_WIDTH*SCREEN_HEIGHT/2];
 
 static inline void SetPixel16(int32_t x, int32_t y, int32_t color) {
@@ -123,7 +119,7 @@ static void drawChar(uint8_t* restrict buffer, int32_t *x, int32_t *y, int32_t m
 		*x = margin;
 		*y += 8;
 	}
-	else if(*y < HOST_HEIGHT_RESOLUTION-1)
+	else if(*y < SCREEN_HEIGHT-1)
 	{
 		charSprite = ch * 8 + n2DLib_font;
 		// Draw charSprite as monochrome 8*8 image using given color

@@ -3,6 +3,16 @@
  * LICENSE : MIT (except when stated otherwise)
 */
 
+#define NECPCFX 1 
+#define UNIX 2 
+#define CASLOOPY 3
+
+//#define CART_AUDIO 1
+#define _16BITS_WRITES
+//#define BIGENDIAN_TEXTURING 1
+//#define FORCE_FULLSCREEN_DRAWS 1
+//#define DEBUGFPS 1
+
 #include <stdint.h>
 #include <limits.h>
 #include <math.h>
@@ -10,11 +20,25 @@
 #include <stdio.h>
 #include <string.h>
 #include <stddef.h>
+
+#if PLATFORM == UNIX
+#include <SDL/SDL.h>
+#include <SDL/SDL_image.h>
+uint8_t gamepal[768];
+
+#define FPS_VIDEO 60
+const float real_FPS = 1000/FPS_VIDEO;
+
+void fadeInPalette(unsigned char pal[], int sizep){};
+void fadeOutPalette(unsigned char pal[], int sizep){};
+void Empty_Palette() {};
+#endif
+
+#if PLATFORM == NECPCFX
 #include "fastking.h"
 #include "pcfx.h"
 
 #include "go_sfx.h"
-
 #include "drop.h"
 #include "selsfx.h"
 #include "explosion.h"
@@ -24,9 +48,14 @@
 #include "bg.h"
 #include "textures.h"
 #include "title.h"
+
+#endif
+
+#include "font_drawing.h"
+#include "defines.h"
+#include "common.h"
 #include "trig.h"
 
-//#define CART_AUDIO 1
 
 #ifdef CART_AUDIO
 
@@ -40,12 +69,83 @@
 #include "race_music.h"
 #endif
 
-//#define DEBUGFPS 1 
-extern int nframe;
+#define DROP_SFX 0
+#define EXPLOSION_SFX 1
+#define SELECT_SFX 2
+#define READY_SFX 3
+#define GO_SFX 4
 
-/* PC-FX SPECIFIC */
 
-static inline void my_memcpy32(void *dest, const void *src, size_t n) {
+#if PLATFORM == NECPCFX
+
+#define BIGENDIAN_TEXTURING 1
+
+#define GAME_FRAMEBUFFER framebuffer_game
+#define DEFAULT_INTERVAL 150
+#define PLAY_SFX(channel, index) Play_PSGSample(channel, index, 0);
+
+int16_t framebuffer_game[256*240/2];
+
+#ifdef DEBUGFPS
+#define REFRESH_SCREEN(index, length) \
+	eris_king_set_kram_write(index, 1); \
+	king_kram_write_buffer(framebuffer_game + index, length);
+#else
+#define REFRESH_SCREEN(index, length) \
+	eris_king_set_kram_write(index, 1); \
+	king_kram_write_buffer(framebuffer_game + index, length); 
+
+#endif
+	
+#elif PLATFORM == UNIX
+
+#define FORCE_FULLSCREEN_DRAWS 1
+
+#define GAME_FRAMEBUFFER screen->pixels
+#define REFRESH_SCREEN(index, length)
+
+#define DEFAULT_INTERVAL 500
+
+#define PLAY_SFX(channel, index)
+
+// Texture data (32x224 pixels) using 8-bit color indices
+uint8_t texture[32 * 224]; // 32 pixels wide, 224 pixels high
+
+// Background data arrays
+uint8_t bg_game[SCREEN_WIDTH * SCREEN_HEIGHT];
+uint8_t bg_title[SCREEN_WIDTH * SCREEN_HEIGHT];
+
+// SDL surface pointers
+SDL_Surface* screen;
+SDL_Surface* texture_surface;
+
+#elif PLATFORM == CASLOOPY
+#include "loopy.h"
+#include "casloopy.h"
+
+#include "gamepal.h"
+#include "bg.h"
+#include "textures.h"
+#include "title.h"
+
+int16_t framebuffer_game[256*240/2];
+
+#define BIGENDIAN_TEXTURING 1
+
+#define GAME_FRAMEBUFFER framebuffer_game
+#define REFRESH_SCREEN(index, length) CopyFrameBuffer((int*) framebuffer_game, (int*) VDP_BITMAP_VRAM ); \
+        BiosVsync();
+
+#define DEFAULT_INTERVAL 500
+
+#define PLAY_SFX(channel, index)
+
+#else
+#error "No Platform set!"
+#endif
+
+static inline void my_memcpy32(void *dest, const void *src, size_t n) 
+{
     int32_t *d = (int32_t*)dest;
     const int32_t *s = (const int32_t*)src;
 
@@ -54,11 +154,17 @@ static inline void my_memcpy32(void *dest, const void *src, size_t n) {
         *d++ = *s++;
         n -= 4;
     }
+
+    // Handle any remaining bytes (if the size is not a multiple of 4)
+    int8_t *d8 = (int8_t*)d;
+    const int8_t *s8 = (const int8_t*)s;
+    while (n > 0) {
+        *d8++ = *s8++;
+        n--;
+    }
 }
 
-int16_t framebuffer_game[256*240/2];
-
-char* myitoa(int value) {
+static char* myitoa(int value) {
     static char buffer[12];  // Enough for an integer (-2147483648 has 11 characters + 1 for '\0')
     char* ptr = buffer + sizeof(buffer) - 1;
     int is_negative = 0;
@@ -87,150 +193,15 @@ char* myitoa(int value) {
 }
 
 
-
-
-/* END */
-
-#define SWAP(a, b) do { \
-    __typeof__(a) _temp = (a); \
-    (a) = (b); \
-    (b) = _temp; \
-} while (0)
-
-static inline void swap_elements(void *a, void *b, size_t size) {
-    unsigned char *pa = (unsigned char*)a;
-    unsigned char *pb = (unsigned char*)b;
-    
-    // Operate on 32-bit chunks if size is a multiple of 4
-    while (size >= sizeof(int32_t)) {
-        SWAP(*(int32_t*)pa, *(int32_t*)pb);
-        pa += sizeof(int32_t);
-        pb += sizeof(int32_t);
-        size -= sizeof(int32_t);
-    }
-
-    // Operate on 16-bit chunks if size is a multiple of 2
-    while (size >= sizeof(uint16_t)) {
-        SWAP(*(uint16_t*)pa, *(uint16_t*)pb);
-        pa += sizeof(uint16_t);
-        pb += sizeof(uint16_t);
-        size -= sizeof(uint16_t);
-    }
-
-    // Operate on the remaining bytes (if any)
-    while (size > 0) {
-        SWAP(*pa, *pb);
-        pa++;
-        pb++;
-        size--;
-    }
-}
-
-static inline int partition(void *base, size_t size, int low, int high, int (*compar)(const void *, const void *)) {
-    char *arr = (char*)base;
-    char *pivot = arr + high * size;
-    int i = low - 1;
-
-    for (int j = low; j < high; j++) {
-        if (compar(arr + j * size, pivot) <= 0) {
-            i++;
-            swap_elements(arr + i * size, arr + j * size, size);
-        }
-    }
-    swap_elements(arr + (i + 1) * size, arr + high * size, size);
-    return i + 1;
-}
-
-static inline void quicksort(void *base, size_t size, int low, int high, int (*compar)(const void *, const void *)) {
-    if (low < high) 
-    {
-        int pi = partition(base, size, low, high, compar);
-
-        quicksort(base, size, low, pi - 1, compar);
-        quicksort(base, size, pi + 1, high, compar);
-    }
-}
-
-static void qsort_game(void *base, size_t num, size_t size, int (*compar)(const void *, const void *)) {
-    quicksort(base, size, 0, num - 1, compar);
-}
-
-
-#define _16BITS_WRITES
-#define BIGENDIAN_TEXTURING 1
-//#define FORCE_FULLSCREEN_DRAWS 1
-
-// Base screen dimensions for scaling
-#define BASE_SCREEN_WIDTH 256
-#define BASE_SCREEN_HEIGHT 240
-
-// Fixed-point arithmetic settings
-#define FIXED_POINT_SHIFT 8
-#define FIXED_POINT_SCALE (1 << FIXED_POINT_SHIFT)
-
-// Screen dimensions
-#define SCREEN_WIDTH 256
-#define SCREEN_HEIGHT 240
-
-#define SCREEN_WIDTH_HALF (SCREEN_WIDTH / 2)
-#define SCREEN_HEIGHT_HALF (SCREEN_HEIGHT / 2)
-
-// Scaling factors as fixed-point values
-#define SCALE_FACTOR_X ((SCREEN_WIDTH << FIXED_POINT_SHIFT) / BASE_SCREEN_WIDTH)
-#define SCALE_FACTOR_Y ((SCREEN_HEIGHT << FIXED_POINT_SHIFT) / BASE_SCREEN_HEIGHT)
-
-// Game settings
-#define GRID_WIDTH 12
-#define GRID_HEIGHT 12
-#define BLOCK_SIZE ((16 * SCALE_FACTOR_Y) >> FIXED_POINT_SHIFT)
-
-// 3D settings
-#define BASE_CUBE_SIZE 16
-#define CUBE_SIZE ((BASE_CUBE_SIZE * SCALE_FACTOR_Y) >> FIXED_POINT_SHIFT)
-#define DISTANCE_CUBE (CUBE_SIZE / 2)
-#define DISTANCE_CUBE_TITLESCREEN 32
-
-// Adjusted projection distance
-#define BASE_PROJECTION_DISTANCE -128
-#define PROJECTION_DISTANCE ((BASE_PROJECTION_DISTANCE * SCALE_FACTOR_Y) >> FIXED_POINT_SHIFT)
-
-#define STARTING_Z_OFFSET -256
-
-// Angle settings
-#define ANGLE_MAX 256
-#define ANGLE_MASK (ANGLE_MAX - 1)
-
-// Define a global face list for painter's algorithm
-#define MAX_FACES 900
-
-#define min(a,b) (((a)<(b))?(a):(b))
-#define max(a,b) (((a)>(b))?(a):(b))
-
-#define BSWAP16(x) ((((x) & 0xFF00) >> 8) | (((x) & 0x00FF) << 8))
+#include "qsort.c"
+#include "defines.h"
 
 int force_redraw = 0;
 int force_redraw_puzzle = 0;
 bool backtitle = false;
 
-// Structure to represent a 3D point
-typedef struct {
-    int32_t x, y, z;
-} Point3D;
-
-// Structure to represent a 2D point with texture coordinates
-typedef struct {
-    int32_t x, y;
-    int32_t u, v;
-} Point2D;
-
-// Structure to represent a face
-typedef struct {
-    int vertex_indices[4];
-} Face;
-
-
 // Game state variables
-uint8_t grid[(GRID_HEIGHT * GRID_WIDTH)];
+int grid[(GRID_HEIGHT * GRID_WIDTH)];
 int score = 0;
 bool game_over = false;
 
@@ -253,137 +224,8 @@ void load_puzzle(int index);
 void Game_Switch(int state);
 
 // Define macro for puzzle piece indexing
-#define PUZZLE_PIECE_INDEX(type, rotation, i, j) \
+#define GET_PUZZLE_PIECE_INDEX(type, rotation, i, j) \
     ((((type) * 4 + (rotation)) * 4 + (i)) * 4 + (j))
-
-// Puzzle pieces (shapes) as a 1D array
-const uint8_t puzzle_pieces[7 * 4 * 4 * 4] = {
-    // Flattened data
-    // Type 0 (I)
-    // Rotation 0
-    0,0,0,0,  1,1,1,1,  0,0,0,0,  0,0,0,0,
-    // Rotation 1
-    0,0,1,0,  0,0,1,0,  0,0,1,0,  0,0,1,0,
-    // Rotation 2
-    0,0,0,0,  0,0,0,0,  1,1,1,1,  0,0,0,0,
-    // Rotation 3
-    0,1,0,0,  0,1,0,0,  0,1,0,0,  0,1,0,0,
-    // Type 1 (O)
-    // Rotation 0
-    0,0,0,0,  0,1,1,0,  0,1,1,0,  0,0,0,0,
-    // Rotation 1
-    0,0,0,0,  0,1,1,0,  0,1,1,0,  0,0,0,0,
-    // Rotation 2
-    0,0,0,0,  0,1,1,0,  0,1,1,0,  0,0,0,0,
-    // Rotation 3
-    0,0,0,0,  0,1,1,0,  0,1,1,0,  0,0,0,0,
-    // Type 2 (T)
-    // Rotation 0
-    0,0,0,0,  1,1,1,0,  0,1,0,0,  0,0,0,0,
-    // Rotation 1
-    0,0,1,0,  0,1,1,0,  0,0,1,0,  0,0,0,0,
-    // Rotation 2
-    0,0,0,0,  0,1,0,0,  1,1,1,0,  0,0,0,0,
-    // Rotation 3
-    0,1,0,0,  0,1,1,0,  0,1,0,0,  0,0,0,0,
-    // Type 3 (S)
-    // Rotation 0
-    0,0,0,0,  0,1,1,0,  1,1,0,0,  0,0,0,0,
-    // Rotation 1
-    0,1,0,0,  0,1,1,0,  0,0,1,0,  0,0,0,0,
-    // Rotation 2
-    0,0,0,0,  0,1,1,0,  1,1,0,0,  0,0,0,0,
-    // Rotation 3
-    0,1,0,0,  0,1,1,0,  0,0,1,0,  0,0,0,0,
-    // Type 4 (Z)
-    // Rotation 0
-    0,0,0,0,  1,1,0,0,  0,1,1,0,  0,0,0,0,
-    // Rotation 1
-    0,0,1,0,  0,1,1,0,  0,1,0,0,  0,0,0,0,
-    // Rotation 2
-    0,0,0,0,  1,1,0,0,  0,1,1,0,  0,0,0,0,
-    // Rotation 3
-    0,0,1,0,  0,1,1,0,  0,1,0,0,  0,0,0,0,
-    // Type 5 (J)
-    // Rotation 0
-    0,0,0,0,  1,1,1,0,  0,0,1,0,  0,0,0,0,
-    // Rotation 1
-    0,0,1,0,  0,0,1,0,  0,1,1,0,  0,0,0,0,
-    // Rotation 2
-    0,0,0,0,  1,0,0,0,  1,1,1,0,  0,0,0,0,
-    // Rotation 3
-    0,1,1,0,  0,1,0,0,  0,1,0,0,  0,0,0,0,
-    // Type 6 (L)
-    // Rotation 0
-    0,0,0,0,  1,1,1,0,  1,0,0,0,  0,0,0,0,
-    // Rotation 1
-    0,1,0,0,  0,1,0,0,  0,1,1,0,  0,0,0,0,
-    // Rotation 2
-    0,0,0,0,  0,0,1,0,  1,1,1,0,  0,0,0,0,
-    // Rotation 3
-    0,1,1,0,  0,0,1,0,  0,0,1,0,  0,0,0,0
-};
-
-// Common cube data
-static const Point3D cube_vertices_template[8] = {
-    {-DISTANCE_CUBE,  DISTANCE_CUBE,  DISTANCE_CUBE}, // 0
-    { DISTANCE_CUBE,  DISTANCE_CUBE,  DISTANCE_CUBE}, // 1
-    { DISTANCE_CUBE, -DISTANCE_CUBE,  DISTANCE_CUBE}, // 2
-    {-DISTANCE_CUBE, -DISTANCE_CUBE,  DISTANCE_CUBE}, // 3
-    {-DISTANCE_CUBE,  DISTANCE_CUBE, -DISTANCE_CUBE}, // 4
-    { DISTANCE_CUBE,  DISTANCE_CUBE, -DISTANCE_CUBE}, // 5
-    { DISTANCE_CUBE, -DISTANCE_CUBE, -DISTANCE_CUBE}, // 6
-    {-DISTANCE_CUBE, -DISTANCE_CUBE, -DISTANCE_CUBE}  // 7
-};
-
-// Updated cube texture coordinates template with 24 entries
-static const int32_t cube_texcoords_template[24 * 2] = {
-    // Front face (indices 0 to 7)
-    0<<8, 0<<8,    // Vertex 0
-    31<<8, 0<<8,   // Vertex 1
-    31<<8, 31<<8,  // Vertex 2
-    0<<8, 31<<8,   // Vertex 3
-    // Back face (indices 8 to 15)
-    31<<8, 0<<8,   // Vertex 4
-    0<<8, 0<<8,    // Vertex 5
-    0<<8, 31<<8,   // Vertex 6
-    31<<8, 31<<8,  // Vertex 7
-    // Left face (indices 16 to 23)
-    0<<8, 0<<8,    // Vertex 8
-    31<<8, 0<<8,   // Vertex 9
-    31<<8, 31<<8,  // Vertex 10
-    0<<8, 31<<8,   // Vertex 11
-    // Right face (indices 24 to 31)
-    31<<8, 0<<8,   // Vertex 12
-    0<<8, 0<<8,    // Vertex 13
-    0<<8, 31<<8,   // Vertex 14
-    31<<8, 31<<8,  // Vertex 15
-    // Top face (indices 32 to 39)
-    0<<8, 0<<8,    // Vertex 16
-    31<<8, 0<<8,   // Vertex 17
-    31<<8, 31<<8,  // Vertex 18
-    0<<8, 31<<8,   // Vertex 19
-    // Bottom face (indices 40 to 47)
-    0<<8, 31<<8,   // Vertex 20
-    31<<8, 31<<8,  // Vertex 21
-    31<<8, 0<<8,   // Vertex 22
-    0<<8, 0<<8     // Vertex 23
-};
-
-static const int cube_faces_template[6 * 4] = {
-    0, 1, 2, 3,   // Front face
-    5, 4, 7, 6,   // Back face
-    4, 0, 3, 7,   // Left face
-    1, 5, 6, 2,   // Right face
-    4, 5, 1, 0,   // Top face
-    3, 2, 6, 7    // Bottom face
-};
-
-typedef struct {
-    Point2D projected_vertices[4]; // Projected vertices of the face
-    int32_t average_depth;         // Average depth for sorting
-    int tetromino_type;            // Type of tetromino for texture mapping
-} FaceToDraw;
 
 FaceToDraw face_list[MAX_FACES];
 int face_count = 0;
@@ -395,124 +237,14 @@ static inline int compare_faces(const void *a, const void *b) {
     return faceA->average_depth - faceB->average_depth; // Sort from farthest to nearest
 }
 
-static inline void SetPixel16(int32_t x, int32_t y, int32_t color) {
-    int32_t index = y * SCREEN_WIDTH + x;
-    ((int16_t*)framebuffer_game)[index >> 1] = color;
-}
-
-// Helper function to fetch the texture color
-static inline int16_t fetchTextureColor(int32_t u, int32_t v, int tetromino_type) {
-    uint8_t tex_u = ((u >> 8) & 31);
-    uint8_t tex_v_full = ((v >> 8) & 31);
-    uint8_t local_v = tex_v_full & 0x0F;
-    bool is_brighter = tex_v_full >= 16;
-    int tile_index = tetromino_type * 2 + (is_brighter ? 1 : 0);
-    //if (tile_index >= 14) tile_index = 0;
-    
-    // Calculate the index in the texture array
-    int index = tile_index * 32 * 16 + local_v * 32 + tex_u;
-    
-    // Since texture is stored as uint16_t but contains 8-bit values, we access it as uint16_t*
-    uint8_t *texture16 = (uint8_t *)texture;
-    
-    // Extract the 8-bit value from the 16-bit storage
-    int16_t color = (int16_t)(texture16[index] ); // Assuming lower byte contains the color index
-    
-    return color;
-}
-
-static inline int16_t fetchTextureColor16(int32_t u, int32_t v, int tetromino_type) {
-    int32_t tex_u = ((u >> 8) & 31);
-    int32_t tex_v_full = ((v >> 8) & 31);
-    bool is_brighter = tex_v_full >= 16;
-    int32_t local_v = tex_v_full & 0x0F;
-    int tile_index = tetromino_type * 2 + (is_brighter ? 1 : 0);
-	//if (tile_index >= 14) tile_index = 0;
-
-    // Calculate the index in the texture array
-    int index = (tile_index * 32 * 16 + local_v * 32 + tex_u)/2;
-
-    int16_t color = (texture[index]);
-    
-    return color;
-}
-
-// Function to read a 16-bit word from the framebuffer, handling endianess
-static inline int16_t GetPixel16(int32_t x, int32_t y) {
-    // Calculate the address in the framebuffer
-    int16_t *fb = (int16_t *)framebuffer_game;
-    int16_t data = fb[y * (SCREEN_WIDTH / 2) + (x / 2)];
-    return data;
-}
-
-// Modified SetPixel8 function
-static inline void SetPixel8(int32_t x, int32_t y, int32_t color) 
-{
-	x = x & ~1;
-    // Read the existing 16-bit word from the framebuffer
-    int16_t existing_data = GetPixel16(x, y); // Align x to even position
-
-    // Modify the appropriate byte
-    // x is even, modify upper byte
-	existing_data = (existing_data & 0x00FF) | (color << 8);
-
-    // Write back the modified 16-bit word using SetPixel16
-    SetPixel16(x, y, existing_data);
-}
-
-static inline void SetPixel8_x_1(int32_t x, int32_t y, int32_t color) 
-{
-	x = x & ~1;
-	
-    // Read the existing 16-bit word from the framebuffer
-    int16_t existing_data = GetPixel16(x, y); // Align x to even position
-
-    // Modify the appropriate byte
-    //if (x & 1) Always true
-    existing_data = (existing_data & 0xFF00) | color;
-
-    // Write back the modified 16-bit word using SetPixel16
-    SetPixel16(x, y, existing_data);
-}
-
-
-static inline void drawScanline(int32_t xs, int32_t xe, int32_t u, int32_t v,
-    int32_t du, int32_t dv, int y, int tetromino_type) {
-#if defined(_8BITS_WRITES)
-    for (int32_t x = xs; x <= xe; x++) {
-        int32_t color = fetchTextureColor(u, v, tetromino_type);
-        setPixel8(x, y, color);
-        u += du;
-        v += dv;
-    }
-#elif defined(_16BITS_WRITES)
-    if (xs & 1) {
-        SetPixel8_x_1(xs, y, fetchTextureColor(u, v, tetromino_type));
-        xs++;
-        u += du;
-        v += dv;
-    }
-
-    int32_t x;
-    for (x = xs; x <= xe - 1; x += 2) 
-    {
-        int32_t colors = fetchTextureColor16(u, v, tetromino_type);
-        u += du;
-        v += dv;
-        u += du;
-        v += dv;
-        SetPixel16(x, y, colors);
-    }
-    if (x == xe) 
-    {
-        int32_t color = fetchTextureColor(u, v, tetromino_type);
-        SetPixel8(x, y, color);
-    }
+#if PLATFORM == NECPCFX
+#include "draw_pcfx.c"
+#else
+#include "draw_pc.c"
 #endif
-}
 
-
-static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D p3, int tetromino_type) {
+static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D p3, int tetromino_type) 
+{
     // Use the vertices as given
     Point2D points_array[4] = { p0, p1, p2, p3 };
     Point2D *points = points_array;
@@ -522,15 +254,10 @@ static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D 
     if ((points + 1)->y < min_y) min_y = (points + 1)->y; else if ((points + 1)->y > max_y) max_y = (points + 1)->y;
     if ((points + 2)->y < min_y) min_y = (points + 2)->y; else if ((points + 2)->y > max_y) max_y = (points + 2)->y;
     if ((points + 3)->y < min_y) min_y = (points + 3)->y; else if ((points + 3)->y > max_y) max_y = (points + 3)->y;
-
-    // Define a structure to hold edge data
-    typedef struct {
-        int y_start, y_end;
-        int32_t x, x_step;
-        int32_t u, u_step;
-        int32_t v, v_step;
-    } EdgeData;
-
+    
+	if (min_y <= 0) min_y = 0;
+	if (max_y >= SCREEN_HEIGHT) max_y = SCREEN_HEIGHT;
+	
     EdgeData edges_array[4];
     EdgeData *edges = edges_array;
 
@@ -544,7 +271,7 @@ static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D 
 
         if (dy == 0) {
             edge->y_start = edge->y_end = pA->y;
-            edge->x = pA->x << FIXED_POINT_SHIFT;
+            edge->x = INT_TO_FIXED(pA->x);
             edge->u = pA->u;
             edge->v = pA->v;
             edge->x_step = edge->u_step = edge->v_step = 0;
@@ -554,27 +281,35 @@ static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D 
         if (dy > 0) {
             edge->y_start = pA->y;
             edge->y_end = pB->y;
-            edge->x = pA->x << FIXED_POINT_SHIFT;
+            edge->x = INT_TO_FIXED(pA->x);
             edge->u = pA->u;
             edge->v = pA->v;
+            
+            int dx = pB->x - pA->x;
+            int du = pB->u - pA->u;
+			int dv = pB->v - pA->v;
+            edge->x_step = Division(INT_TO_FIXED(pB->x - pA->x) , dy);
+            edge->u_step = Division(pB->u - pA->u , dy);
+            edge->v_step = Division(pB->v - pA->v , dy);
 
-            edge->x_step = ((pB->x - pA->x) << FIXED_POINT_SHIFT) / dy;
-            edge->u_step = (pB->u - pA->u) / dy;
-            edge->v_step = (pB->v - pA->v) / dy;
         } else {
             edge->y_start = pB->y;
             edge->y_end = pA->y;
-            edge->x = pB->x << FIXED_POINT_SHIFT;
+            edge->x = INT_TO_FIXED(pB->x);
             edge->u = pB->u;
             edge->v = pB->v;
 
             dy = -dy; // Make dy positive
-            edge->x_step = ((pA->x - pB->x) << FIXED_POINT_SHIFT) / dy;
-            edge->u_step = (pA->u - pB->u) / dy;
-            edge->v_step = (pA->v - pB->v) / dy;
+			int dx = pA->x - pB->x;
+			int du = pA->u - pB->u;
+			int dv = pA->v - pB->v;
+			edge->x_step = Division(INT_TO_FIXED(pA->x - pB->x), dy);
+            edge->u_step = Division(pA->u - pB->u , dy);
+            edge->v_step = Division(pA->v - pB->v , dy);
         }
     }
-
+	
+	
     // For each scanline from min_y to max_y
     for (int y = min_y; y <= max_y; y++) {
         int num_intersections = 0;
@@ -591,7 +326,7 @@ static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D 
 				if (y < edge->y_end)
 				{
 					// Store intersection data
-					*x_int_ptr++ = edge->x >> FIXED_POINT_SHIFT;
+					*x_int_ptr++ = FIXED_TO_INT(edge->x);
 					*u_int_ptr++ = edge->u;
 					*v_int_ptr++ = edge->v;
 					num_intersections++;
@@ -634,135 +369,11 @@ static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D 
         int dx = xe - xs;
         if (dx == 0) continue;  // Avoid division by zero
 
-        int du = (ue - us) / dx;
-        int dv = (ve - vs) / dx;
-
-        drawScanline(xs, xe, us, vs, du, dv, y, tetromino_type);
+        int du = Division(ue - us, dx);
+		int dv = Division(ve - vs, dx);
+		drawScanline(xs, xe, us, vs, du, dv, y, tetromino_type);
     }
 }
-
-
-
-void drawTexturedTriangle(Point2D p1, Point2D p2, Point2D p3, int tetromino_type) {
-    // Sort vertices by y-coordinate ascending (p1.y <= p2.y <= p3.y)
-    if (p1.y > p2.y) { Point2D temp = p1; p1 = p2; p2 = temp; }
-    if (p1.y > p3.y) { Point2D temp = p1; p1 = p3; p3 = temp; }
-    if (p2.y > p3.y) { Point2D temp = p2; p2 = p3; p3 = temp; }
-
-    int32_t total_height = p3.y - p1.y;
-    if (total_height == 0) return;
-
-    // For fixed-point calculations
-    int32_t dx13 = ((p3.x - p1.x) << FIXED_POINT_SHIFT) / total_height;
-    int32_t du13 = ((int32_t)(p3.u - p1.u)) / total_height;
-    int32_t dv13 = ((int32_t)(p3.v - p1.v)) / total_height;
-
-    int32_t dx12 = 0, du12 = 0, dv12 = 0;
-    int32_t dx23 = 0, du23 = 0, dv23 = 0;
-
-    int32_t segment_height = p2.y - p1.y;
-    if (segment_height > 0) {
-        dx12 = ((p2.x - p1.x) << FIXED_POINT_SHIFT) / segment_height;
-        du12 = ((int32_t)(p2.u - p1.u)) / segment_height;
-        dv12 = ((int32_t)(p2.v - p1.v)) / segment_height;
-    }
-
-    if (p3.y - p2.y > 0) {
-        dx23 = ((p3.x - p2.x) << FIXED_POINT_SHIFT) / (p3.y - p2.y);
-        du23 = ((int32_t)(p3.u - p2.u)) / (p3.y - p2.y);
-        dv23 = ((int32_t)(p3.v - p2.v)) / (p3.y - p2.y);
-    }
-
-    int32_t x_start = p1.x << FIXED_POINT_SHIFT;
-    int32_t u_start = p1.u;
-    int32_t v_start = p1.v;
-
-    int32_t x_end = x_start;
-    int32_t u_end = u_start;
-    int32_t v_end = v_start;
-
-    int32_t y;
-
-    // First half
-    for (y = p1.y; y < p2.y; y++) {
-        int32_t xs = x_start >> FIXED_POINT_SHIFT;
-        int32_t xe = x_end >> FIXED_POINT_SHIFT;
-
-        int32_t us = u_start;
-        int32_t vs = v_start;
-
-        int32_t ue = u_end;
-        int32_t ve = v_end;
-
-        if (xs > xe) {
-            int32_t temp_x = xs; xs = xe; xe = temp_x;
-            int32_t temp_u = us; us = ue; ue = temp_u;
-            int32_t temp_v = vs; vs = ve; ve = temp_v;
-        }
-
-        int32_t dx = xe - xs;
-        int32_t du = 0, dv = 0;
-        if (dx > 0) {
-            du = (ue - us) / dx;
-            dv = (ve - vs) / dx;
-        }
-
-        drawScanline(xs, xe, us, vs, du, dv, y, tetromino_type);
-
-        x_start += dx13;
-        u_start += du13;
-        v_start += dv13;
-
-        x_end += dx12;
-        u_end += du12;
-        v_end += dv12;
-    }
-
-    // Second half
-    segment_height = p3.y - p2.y;
-    if (segment_height == 0) return;
-
-    x_end = (p2.x << FIXED_POINT_SHIFT);
-    u_end = p2.u;
-    v_end = p2.v;
-
-    for (y = p2.y; y <= p3.y; y++) {
-        int32_t xs = x_start >> FIXED_POINT_SHIFT;
-        int32_t xe = x_end >> FIXED_POINT_SHIFT;
-
-        int32_t us = u_start;
-        int32_t vs = v_start;
-
-        int32_t ue = u_end;
-        int32_t ve = v_end;
-
-        if (xs > xe) {
-            int32_t temp_x = xs; xs = xe; xe = temp_x;
-            int32_t temp_u = us; us = ue; ue = temp_u;
-            int32_t temp_v = vs; vs = ve; ve = temp_v;
-        }
-
-        int32_t dx = xe - xs;
-        int32_t du = 0, dv = 0;
-        if (dx > 0) {
-            du = (ue - us) / dx;
-            dv = (ve - vs) / dx;
-        }
-
-        drawScanline(xs, xe, us, vs, du, dv, y, tetromino_type);
-
-        x_start += dx13;
-        u_start += du13;
-        v_start += dv13;
-
-        x_end += dx23;
-        u_end += du23;
-        v_end += dv23;
-    }
-}
-
-
-
 
 
 static inline void draw_sorted_faces() 
@@ -772,8 +383,9 @@ static inline void draw_sorted_faces()
 					
     for (int i = 0; i < face_count; i++) {
         FaceToDraw *face = &face_list[i];
+        #if 0
         // Draw two triangles per face
-        /*drawTexturedTriangle(
+        drawTexturedTriangle(
             face->projected_vertices[0],
             face->projected_vertices[1],
             face->projected_vertices[2],
@@ -784,7 +396,8 @@ static inline void draw_sorted_faces()
             face->projected_vertices[2],
             face->projected_vertices[3],
             face->tetromino_type
-        );*/
+        );
+        #endif
 		drawTexturedQuad(
 			face->projected_vertices[0],
 			face->projected_vertices[1],
@@ -806,8 +419,8 @@ Point3D rotateX(Point3D p, int angle) {
     int32_t sinA = sin_lookup[angle & ANGLE_MASK];
     int32_t cosA = cos_lookup[angle & ANGLE_MASK];
 
-    int32_t y = (p.y * cosA - p.z * sinA) >> FIXED_POINT_SHIFT;
-    int32_t z = (p.y * sinA + p.z * cosA) >> FIXED_POINT_SHIFT;
+    int32_t y = FIXED_TO_INT(p.y * cosA - p.z * sinA);
+    int32_t z = FIXED_TO_INT(p.y * sinA + p.z * cosA);
     return (Point3D){p.x, y, z};
 }
 
@@ -816,8 +429,8 @@ Point3D rotateY(Point3D p, int angle) {
     int32_t sinA = sin_lookup[angle & ANGLE_MASK];
     int32_t cosA = cos_lookup[angle & ANGLE_MASK];
 
-    int32_t x = (p.x * cosA + p.z * sinA) >> FIXED_POINT_SHIFT;
-    int32_t z = (p.z * cosA - p.x * sinA) >> FIXED_POINT_SHIFT;
+    int32_t x = FIXED_TO_INT(p.x * cosA + p.z * sinA);
+    int32_t z = FIXED_TO_INT(p.z * cosA - p.x * sinA);
     return (Point3D){x, p.y, z};
 }
 
@@ -826,17 +439,17 @@ Point3D rotateZ(Point3D p, int angle) {
     int32_t sinA = sin_lookup[angle & ANGLE_MASK];
     int32_t cosA = cos_lookup[angle & ANGLE_MASK];
 
-    int32_t x = (p.x * cosA - p.y * sinA) >> FIXED_POINT_SHIFT;
-    int32_t y = (p.x * sinA + p.y * cosA) >> FIXED_POINT_SHIFT;
+    int32_t x = FIXED_TO_INT(p.x * cosA - p.y * sinA);
+    int32_t y = FIXED_TO_INT(p.x * sinA + p.y * cosA);
     return (Point3D){x, y, p.z};
 }
 
 // Project a 3D point to 2D screen space with texture coordinates
 Point2D project(Point3D p, int32_t u, int32_t v) {
     int32_t distance = PROJECTION_DISTANCE;
-    int32_t factor = (distance << FIXED_POINT_SHIFT) / (distance - p.z);
-    int32_t x = (p.x * factor) >> FIXED_POINT_SHIFT;
-    int32_t y = (p.y * factor) >> FIXED_POINT_SHIFT;
+    int32_t factor = Division(INT_TO_FIXED(distance) , (distance - p.z));
+    int32_t x = FIXED_TO_INT(p.x * factor);
+    int32_t y = FIXED_TO_INT(p.y * factor);
     return (Point2D){x, y, u, v};
 }
 
@@ -903,8 +516,8 @@ static inline void process_cube_block_faces(Point3D *transformed_vertices, int t
 
         for (int n = 0; n < 4; n++) {
             Point3D *v = &transformed_vertices[face_indices[n]];
-            uint32_t u = cube_texcoords_template[tex_coord_offset + n * 2 + 0];
-            uint32_t v_tex = cube_texcoords_template[tex_coord_offset + n * 2 + 1];
+            int32_t u = cube_texcoords_template[tex_coord_offset + n * 2 + 0];
+            int32_t v_tex = cube_texcoords_template[tex_coord_offset + n * 2 + 1];
 
             Point2D p = project(*v, u, v_tex);
             p.x += SCREEN_WIDTH_HALF;
@@ -936,19 +549,19 @@ void draw_current_piece() {
     int rotation = current_piece.rotation;
     int grid_x = current_piece.x;
     int grid_y = current_piece.y;
-    const uint8_t *piece_shape = &puzzle_pieces[PUZZLE_PIECE_INDEX(type, rotation, 0, 0)];
+    const int32_t *piece_shape = puzzle_pieces;
 
     for (int i = 0; i < 4; i++) {
-        const uint8_t *row = piece_shape + i * 4;
         for (int j = 0; j < 4; j++) {
-            if (*(row + j)) {
+            int index = GET_PUZZLE_PIECE_INDEX(type, rotation, i, j);
+            if (piece_shape[index]) {
                 int x_offset = (grid_x + j) * CUBE_SIZE - (GRID_WIDTH * CUBE_SIZE) / 2;
                 int y_offset = (GRID_HEIGHT - (grid_y + i + 1)) * CUBE_SIZE - (GRID_HEIGHT * CUBE_SIZE) / 2;
                 int z_offset = STARTING_Z_OFFSET;
 
                 // Transform and store vertices for this block
                 Point3D transformed_vertices[8];
-                transform_cube_block(transformed_vertices, x_offset, y_offset, z_offset /*, angle_x, angle_y*/);
+                transform_cube_block(transformed_vertices, x_offset, y_offset, z_offset);
 
                 // Process faces for this block
                 process_cube_block_faces(transformed_vertices, type);
@@ -979,7 +592,7 @@ void undraw_previous_piece() {
     int grid_y = previous_piece_state.y;
 
     // Access the piece shape
-    const uint8_t *piece_shape = &puzzle_pieces[PUZZLE_PIECE_INDEX(type, rotation, 0, 0)];
+    const int32_t *piece_shape = puzzle_pieces;
 
     // Initialize bounding box
     int min_x = SCREEN_WIDTH;
@@ -988,9 +601,9 @@ void undraw_previous_piece() {
     int max_y = 0;
 
     for (int i = 0; i < 4; i++) {
-        const uint8_t *row = piece_shape + i * 4;
         for (int j = 0; j < 4; j++) {
-            if (*(row + j)) {
+			int index = GET_PUZZLE_PIECE_INDEX(type, rotation, i, j);
+            if (piece_shape[index]) {
                 int x_offset = (grid_x + j) * CUBE_SIZE - (GRID_WIDTH * CUBE_SIZE) / 2;
                 int y_offset = (GRID_HEIGHT - (grid_y + i + 1)) * CUBE_SIZE - (GRID_HEIGHT * CUBE_SIZE) / 2;
                 int z_offset = STARTING_Z_OFFSET;
@@ -1005,20 +618,35 @@ void undraw_previous_piece() {
         }
     }
     
-    min_x-= 4;
-	max_x+= 4;
+#if PLATFORM == NECPCFX
+    min_x-= 1;
+#endif
+    
     // Clamp bounding box to screen dimensions
     if (min_x < 0) min_x = 0;
     if (min_y < 0) min_y = 0;
-    if (max_x >= SCREEN_WIDTH) max_x = SCREEN_WIDTH - 4;
-    if (max_y >= SCREEN_HEIGHT) max_y = SCREEN_HEIGHT - 4;
+    if (max_x >= SCREEN_WIDTH) max_x = SCREEN_WIDTH - 1;
+    if (max_y >= SCREEN_HEIGHT) max_y = SCREEN_HEIGHT - 1;
 
-
-    // Restore background using memcpy
+    // Restore background within the bounding box
     for (int y = min_y; y <= max_y; y++) {
         const uint8_t* bg_row = (uint8_t*)bg_game + y * SCREEN_WIDTH;
-        uint8_t* screen_row = (uint8_t*)framebuffer_game + y * SCREEN_WIDTH;
+        uint8_t* screen_row = (uint8_t*)GAME_FRAMEBUFFER + y * SCREEN_WIDTH;
+#if PLATFORM == NECPCFX || PLATFORM == CASLOOPY
         my_memcpy32(screen_row + min_x, bg_row + min_x, max_x - min_x + 2);
+#else
+#ifdef _16BITS_WRITES
+        for (int x = min_x; x <= max_x + 2 /* Extra + 2 to ensure extra clearing */; x += 2) {
+            int32_t index = y * SCREEN_WIDTH + x;
+            int32_t pixel1 = bg_row[x];
+            int32_t pixel2 = bg_row[x + 1];
+            int32_t pixels = (pixel1 << 8) | pixel2;
+            SetPixel16(x, y, pixels);
+        }
+#else
+        memcpy(screen_row + min_x, bg_row + min_x, max_x - min_x + 1);
+#endif
+#endif // PLATFORM == NECPCFX
     }
 }
 
@@ -1026,7 +654,7 @@ void undraw_previous_piece() {
 void draw_grid() {
     for (int i = 0; i < GRID_HEIGHT; i++) {
         for (int j = 0; j < GRID_WIDTH; j++) {
-            uint8_t cell_value = grid[i * GRID_WIDTH + j];
+            int cell_value = grid[i * GRID_WIDTH + j];
             if (cell_value) {
                 int tetromino_type = cell_value - 1;
                 int x = j * CUBE_SIZE;
@@ -1051,16 +679,16 @@ void draw_grid() {
 bool check_collision(int new_x, int new_y, int new_rotation) {
     int type = current_piece.type;
     int rotation = new_rotation;
-    const uint8_t *piece_shape = &puzzle_pieces[PUZZLE_PIECE_INDEX(type, rotation, 0, 0)];
+    const int32_t *piece_shape = puzzle_pieces;
 
     for (int i = 0; i < 4; i++) {
-        const uint8_t *row = piece_shape + i * 4;
         for (int j = 0; j < 4; j++) {
-            if (*(row + j)) {
-                int x = new_x + j;
+			int index = GET_PUZZLE_PIECE_INDEX(type, rotation, i, j);
+            if (piece_shape[index]) {
+                uint32_t x = new_x + j;
                 int y = new_y + i;
 
-                if (x < 0 || x >= GRID_WIDTH || y >= GRID_HEIGHT) return true;
+                if (x >= GRID_WIDTH || y >= GRID_HEIGHT) return true;
                 if (y >= 0 && grid[y * GRID_WIDTH + x]) return true;
             }
         }
@@ -1072,27 +700,36 @@ bool check_collision(int new_x, int new_y, int new_rotation) {
 void clear_lines() {
     for (int i = GRID_HEIGHT - 1; i >= 0; i--) {
         bool full = true;
-        uint8_t *row = grid + i * GRID_WIDTH;
         for (int j = 0; j < GRID_WIDTH; j++) {
-            if (!row[j]) {
+            if (grid[i * GRID_WIDTH + j] == 0) {
                 full = false;
                 break;
             }
         }
         if (full) {
             score += 100;
-            Play_PSGSample(1, 1, 0);
-            memcpy(grid + GRID_WIDTH, grid, i * GRID_WIDTH);
-            memset(grid, 0, GRID_WIDTH);
-            i++; // Re-check the same row
+            PLAY_SFX(0, EXPLOSION_SFX);
+            // Shift rows down by one
+            for (int k = i; k > 0; k--) {
+                for (int j = 0; j < GRID_WIDTH; j++) {
+                    grid[k * GRID_WIDTH + j] = grid[(k - 1) * GRID_WIDTH + j];
+                }
+            }
+            // Clear the top row
+            for (int j = 0; j < GRID_WIDTH; j++) {
+                grid[j] = 0;
+            }
+            // Since we've shifted the rows down, re-examine this row
+            i++;
         }
     }
 }
 
+
 // Function to check almost losing condition
 void check_almost_losing() {
     almost_losing = false;
-    uint8_t *row = grid + 2 * GRID_WIDTH;
+    int *row = grid + 2 * GRID_WIDTH;
     for (int j = 0; j < GRID_WIDTH; j++) {
         if (row[j]) {
             almost_losing = true;
@@ -1107,12 +744,12 @@ void merge_piece() {
     int rotation = current_piece.rotation;
     int grid_x = current_piece.x;
     int grid_y = current_piece.y;
-    const uint8_t *piece_shape = &puzzle_pieces[PUZZLE_PIECE_INDEX(type, rotation, 0, 0)];
+    const int32_t *piece_shape = puzzle_pieces;
 
     for (int i = 0; i < 4; i++) {
-        const uint8_t *row = piece_shape + i * 4;
         for (int j = 0; j < 4; j++) {
-            if (*(row + j)) {
+            int index = GET_PUZZLE_PIECE_INDEX(type, rotation, i, j);
+            if (piece_shape[index]) {
                 int x = grid_x + j;
                 int y = grid_y + i;
 
@@ -1124,7 +761,7 @@ void merge_piece() {
     }
 
     // Check for game over condition (if any block reaches the top row)
-    uint8_t *top_row = grid;
+    int *top_row = grid;
     for (int j = 0; j < GRID_WIDTH; j++) {
         if (top_row[j]) {
             game_over = true;
@@ -1134,16 +771,14 @@ void merge_piece() {
 
     // Clear lines and set background if lines are cleared
     clear_lines();
-    //check_almost_losing();
 }
 
 uint8_t color = 0;
 
 // Function to draw text
-void PrintText(const char* str, int x, int y) {
-	//print_at(x/8, y/8, 12, str);
-
-    print_string(str, 255, 0, x, y, (int8_t*)framebuffer_game);
+void PrintText(const char* str, int x, int y) 
+{
+    print_string(str, 255, 0, x, y, (uint8_t*)GAME_FRAMEBUFFER);
 }
 
 // Game States
@@ -1160,17 +795,17 @@ typedef enum {
 GameState game_state = GAME_STATE_TITLE;
 
 // Uninitiliazed memory
-static unsigned long int next;
+static unsigned long int mynext;
 
 static inline int myrand(void)
 {
-    next = next * 1103515245 + 12345;
-    return (unsigned int)(next/65536) % 32768;
+    mynext = mynext * 1103515245 + 12345;
+    return (unsigned int)(mynext/65536) % 32768;
 }
 
 static inline void mysrand(unsigned int seed)
 {
-    next = seed;
+    mynext = seed;
 }
 
 // Function to spawn a new piece in Arcade Mode
@@ -1190,102 +825,12 @@ void spawn_piece() {
 #include <stdint.h>
 #include <string.h>
 
-// Assuming GRID_WIDTH and GRID_HEIGHT are defined somewhere
-#define GRID_WIDTH 12
-#define GRID_HEIGHT 12
-#define MAX_PUZZLES 4 // Adjust as needed
-
-typedef struct {
-    int num_pieces;
-    int piece_sequence[10]; // Adjust size as needed
-} Puzzle;
 
 Puzzle puzzles[MAX_PUZZLES];
 int current_puzzle_index = 0;
 int puzzle_piece_index = 0;
 
-// Macro to represent a full row of zeros
-#define ROW_ZEROS 0,0,0,0,0,0,0,0,0,0,0,0
 
-// All initial grids merged into a single array
-const uint8_t initial_grids[MAX_PUZZLES * GRID_HEIGHT * GRID_WIDTH] = {
-    // Puzzle 1 grid data
-    // Rows 0-9: all zeros
-    ROW_ZEROS, // Row 0
-    ROW_ZEROS, // Row 1
-    ROW_ZEROS, // Row 2
-    ROW_ZEROS, // Row 3
-    ROW_ZEROS, // Row 4
-    ROW_ZEROS, // Row 5
-    ROW_ZEROS, // Row 6
-    ROW_ZEROS, // Row 7
-    ROW_ZEROS, // Row 8
-    ROW_ZEROS, // Row 9
-    // Row 10
-    2,2,2,2,2,0,0,2,2,2,2,2,
-    // Row 11
-    2,2,2,2,2,0,0,2,2,2,2,2,
-
-    // Puzzle 2 grid data
-    // Rows 0-7: all zeros
-    ROW_ZEROS, // Row 0
-    ROW_ZEROS, // Row 1
-    ROW_ZEROS, // Row 2
-    ROW_ZEROS, // Row 3
-    ROW_ZEROS, // Row 4
-    ROW_ZEROS, // Row 5
-    ROW_ZEROS, // Row 6
-    ROW_ZEROS, // Row 7
-    // Row 8
-    1,0,0,0,1,1,1,1,1,1,1,1,
-    // Row 9
-    1,1,0,1,1,0,0,0,0,1,1,1,
-    // Row 10
-    1,1,1,1,1,1,1,1,1,1,1,1,
-    // Row 11
-    1,1,1,1,1,1,1,1,1,1,1,1,
-
-    // Puzzle 3 grid data
-    // Rows 0-6: all zeros
-    ROW_ZEROS, // Row 0
-    ROW_ZEROS, // Row 1
-    ROW_ZEROS, // Row 2
-    ROW_ZEROS, // Row 3
-    ROW_ZEROS, // Row 4
-    ROW_ZEROS, // Row 5
-    ROW_ZEROS, // Row 6
-    // Row 7
-    0,0,0,0,1,0,0,1,1,1,1,1,
-    // Row 8
-    0,0,0,0,1,0,0,1,1,1,1,1,
-    // Row 9
-    0,0,0,0,1,1,1,1,1,1,1,1,
-    // Row 10
-    1,1,1,1,1,1,1,1,1,1,1,1,
-    // Row 11
-    1,1,1,1,1,1,1,1,1,1,1,1,
-
-    // Puzzle 4 grid data
-    // Rows 0-5: all zeros
-    ROW_ZEROS, // Row 0
-    ROW_ZEROS, // Row 1
-    ROW_ZEROS, // Row 2
-    ROW_ZEROS, // Row 3
-    ROW_ZEROS, // Row 4
-    ROW_ZEROS, // Row 5
-    // Row 6
-    1,1,1,1,0,0,0,0,1,1,1,1,
-    // Row 7
-    1,1,1,1,0,0,0,0,1,1,1,1,
-    // Row 8
-    1,1,1,1,0,0,0,0,1,1,1,1,
-    // Row 9
-    1,1,1,1,0,0,0,0,1,1,1,1,
-    // Row 10
-    1,1,1,1,1,0,0,0,1,1,1,1,
-    // Row 11
-    1,1,1,1,1,1,0,1,1,1,1,1,
-};
 
 // Function to initialize puzzles
 void initialize_puzzles() {
@@ -1293,40 +838,28 @@ void initialize_puzzles() {
     for (puzzle_index = 0; puzzle_index < MAX_PUZZLES; puzzle_index++) {
         // Clear the current puzzle structure
         memset(&puzzles[puzzle_index], 0, sizeof(Puzzle));
-
-        // Initialize num_pieces and piece_sequence based on the puzzle index
-        switch (puzzle_index) {
-            case 0:
-                puzzles[puzzle_index].num_pieces = 1;
-                puzzles[puzzle_index].piece_sequence[0] = 1; // 'O' piece
-                break;
-            case 1:
-                puzzles[puzzle_index].num_pieces = 1;
-                puzzles[puzzle_index].piece_sequence[0] = 2; // 'T' piece
-                puzzles[puzzle_index].piece_sequence[1] = 0; // 'I' piece
-                break;
-            case 2:
-                puzzles[puzzle_index].num_pieces = 4;
-                puzzles[puzzle_index].piece_sequence[0] = 0; // 'I' piece
-                puzzles[puzzle_index].piece_sequence[1] = 0; // 'I' piece
-                puzzles[puzzle_index].piece_sequence[2] = 0; // 'I' piece
-                puzzles[puzzle_index].piece_sequence[3] = 1; // 'O' piece
-                break;
-            case 3:
-                puzzles[puzzle_index].num_pieces = 5;
-                puzzles[puzzle_index].piece_sequence[0] = 2; // 'T' piece
-                puzzles[puzzle_index].piece_sequence[1] = 0; // 'I' piece
-                puzzles[puzzle_index].piece_sequence[2] = 0; // 'I' piece
-                puzzles[puzzle_index].piece_sequence[3] = 0; // 'I' piece
-                puzzles[puzzle_index].piece_sequence[4] = 0; // 'I' piece
-                break;
-            // Additional puzzles can be added here...
-            default:
-                // Handle any additional puzzles or default case
-                break;
-        }
     }
+	puzzles[0].num_pieces = 1;
+	puzzles[0].piece_sequence[0] = 1; // 'O' piece
+
+	puzzles[1].num_pieces = 2;
+	puzzles[1].piece_sequence[0] = 2; // 'T' piece
+	puzzles[1].piece_sequence[1] = 0; // 'I' piece
+
+	puzzles[2].num_pieces = 4;
+	puzzles[2].piece_sequence[0] = 0; // 'I' piece
+	puzzles[2].piece_sequence[1] = 0; // 'I' piece
+	puzzles[2].piece_sequence[2] = 0; // 'I' piece
+	puzzles[2].piece_sequence[3] = 1; // 'O' piece
+
+	puzzles[3].num_pieces = 5;
+	puzzles[3].piece_sequence[0] = 2; // 'T' piece
+	puzzles[3].piece_sequence[1] = 0; // 'I' piece
+	puzzles[3].piece_sequence[2] = 0; // 'I' piece
+	puzzles[3].piece_sequence[3] = 0; // 'I' piece
+	puzzles[3].piece_sequence[4] = 0; // 'I' piece
 }
+
 
 
 
@@ -1347,7 +880,7 @@ void spawn_piece_puzzle() {
             // Load next puzzle
             current_puzzle_index++;
             load_puzzle(current_puzzle_index);
-            drop_interval = 150;
+            drop_interval = DEFAULT_INTERVAL;
         } else {
             // Puzzle failed
             Game_Switch(GAME_STATE_GAME_OVER_PUZZLE); 
@@ -1381,9 +914,10 @@ void load_puzzle(int index) {
 	memcpy(
 		grid,
 		&initial_grids[index * GRID_HEIGHT * GRID_WIDTH],
-		GRID_HEIGHT * GRID_WIDTH * sizeof(grid)
+		GRID_HEIGHT * GRID_WIDTH * sizeof(int)
 	);
    // memcpy(grid, puzzle->initial_grid, sizeof(grid));
+   
     puzzle_piece_index = 0;
     score = 0;
     game_over = false;
@@ -1397,6 +931,7 @@ void load_puzzle(int index) {
 void draw_title_cube(int angle_x, int angle_y, int angle_z, int cube_position_x, int cube_position_y, int distance_cube_titlescreen) {
     // Prepare transformed vertices
     Point3D transformed_vertices[8];
+    Point2D projected_points[8];
 
     for (int i = 0; i < 8; i++) {
         Point3D v = cube_vertices_template[i];
@@ -1417,6 +952,11 @@ void draw_title_cube(int angle_x, int angle_y, int angle_z, int cube_position_x,
         v.z += STARTING_Z_OFFSET;
 
         transformed_vertices[i] = v;
+
+        // Project vertices and store the projected points
+        projected_points[i] = project(v, 0, 0); // Texture coordinates will be assigned later
+        projected_points[i].x += SCREEN_WIDTH_HALF;
+        projected_points[i].y += SCREEN_HEIGHT_HALF;
     }
 
     int num_faces = 6;
@@ -1424,7 +964,7 @@ void draw_title_cube(int angle_x, int angle_y, int angle_z, int cube_position_x,
     int faceOrder[6];
     bool backface[6];
 
-    // For each face
+    // For each face, compute backface culling and depth
     for (int i = 0; i < num_faces; i++) {
         faceOrder[i] = i; // Initialize face order
 
@@ -1437,8 +977,9 @@ void draw_title_cube(int angle_x, int angle_y, int angle_z, int cube_position_x,
         Point3D *v0 = &transformed_vertices[idx0];
         Point3D *v1 = &transformed_vertices[idx1];
         Point3D *v2 = &transformed_vertices[idx2];
+        Point3D *v3 = &transformed_vertices[idx3];
 
-        // Compute face normal
+        // Compute face normal (cross product)
         int32_t ax = v1->x - v0->x;
         int32_t ay = v1->y - v0->y;
         int32_t az = v1->z - v0->z;
@@ -1447,16 +988,13 @@ void draw_title_cube(int angle_x, int angle_y, int angle_z, int cube_position_x,
         int32_t by = v2->y - v0->y;
         int32_t bz = v2->z - v0->z;
 
-        //int32_t nx = ay * bz - az * by;
-        //int32_t ny = az * bx - ax * bz;
         int32_t nz = ax * by - ay * bx;
 
         // Back-face culling
         backface[i] = (nz > 0);
 
-        // Compute total depth
-        int32_t z_sum = v0->z + v1->z + v2->z + transformed_vertices[idx3].z;
-        faceDepths[i] = z_sum; // Sum of z-values
+        // Compute total depth (sum of z-values)
+        faceDepths[i] = v0->z + v1->z + v2->z + v3->z;
     }
 
     // Sort faces from farthest to nearest (ascending z_sum)
@@ -1469,7 +1007,7 @@ void draw_title_cube(int angle_x, int angle_y, int angle_z, int cube_position_x,
             }
         }
     }
-
+	
     // Draw faces
     for (int k = 0; k < num_faces; k++) {
         int i = faceOrder[k];
@@ -1484,35 +1022,34 @@ void draw_title_cube(int angle_x, int angle_y, int angle_z, int cube_position_x,
 
         // Get texture coordinates
         int tex_coord_offset = i * 4 * 2;
-        uint32_t u0 = cube_texcoords_template[tex_coord_offset + 0];
-        uint32_t v0 = cube_texcoords_template[tex_coord_offset + 1];
-        uint32_t u1 = cube_texcoords_template[tex_coord_offset + 2];
-        uint32_t v1 = cube_texcoords_template[tex_coord_offset + 3];
-        uint32_t u2 = cube_texcoords_template[tex_coord_offset + 4];
-        uint32_t v2 = cube_texcoords_template[tex_coord_offset + 5];
-        uint32_t u3 = cube_texcoords_template[tex_coord_offset + 6];
-        uint32_t v3 = cube_texcoords_template[tex_coord_offset + 7];
+        int32_t u0 = cube_texcoords_template[tex_coord_offset + 0];
+        int32_t v0 = cube_texcoords_template[tex_coord_offset + 1];
+        int32_t u1 = cube_texcoords_template[tex_coord_offset + 2];
+        int32_t v1 = cube_texcoords_template[tex_coord_offset + 3];
+        int32_t u2 = cube_texcoords_template[tex_coord_offset + 4];
+        int32_t v2 = cube_texcoords_template[tex_coord_offset + 5];
+        int32_t u3 = cube_texcoords_template[tex_coord_offset + 6];
+        int32_t v3 = cube_texcoords_template[tex_coord_offset + 7];
 
-        // Project vertices and assign texture coordinates
-        Point2D p0 = project(transformed_vertices[idx0], u0, v0);
-        p0.x += SCREEN_WIDTH_HALF;
-        p0.y += SCREEN_HEIGHT_HALF;
-        Point2D p1 = project(transformed_vertices[idx1], u1, v1);
-        p1.x += SCREEN_WIDTH_HALF;
-        p1.y += SCREEN_HEIGHT_HALF;
-        Point2D p2 = project(transformed_vertices[idx2], u2, v2);
-        p2.x += SCREEN_WIDTH_HALF;
-        p2.y += SCREEN_HEIGHT_HALF;
-        Point2D p3 = project(transformed_vertices[idx3], u3, v3);
-        p3.x += SCREEN_WIDTH_HALF;
-        p3.y += SCREEN_HEIGHT_HALF;
+        // Assign texture coordinates to projected points
+        Point2D p0 = projected_points[idx0];
+        p0.u = u0;
+        p0.v = v0;
+        Point2D p1 = projected_points[idx1];
+        p1.u = u1;
+        p1.v = v1;
+        Point2D p2 = projected_points[idx2];
+        p2.u = u2;
+        p2.v = v2;
+        Point2D p3 = projected_points[idx3];
+        p3.u = u3;
+        p3.v = v3;
 
-        // Draw two triangles per face
-       // drawTexturedTriangle(p0, p1, p2, 1);
-        //drawTexturedTriangle(p0, p2, p3, 1);
+        // Draw the face
         drawTexturedQuad(p0, p1, p2, p3, 1);
     }
 }
+
 
 // Add these variables at the beginning of main, with the other variable declarations
 int a_button = 0;
@@ -1541,19 +1078,40 @@ int paddata  = 0;
 int oldpadtype  = 0;
 int oldpaddata  = 0;
 
-// Helper macros to detect button presses
+int32_t oldpad1, oldpad0;
+int32_t newpad1, newpad0;
+
+#if PLATFORM == NECPCFX
 #define BUTTON_PRESSED(b) (b)
+#define DPAD_PRESSED BUTTON_PRESSED
+#elif PLATFORM == CASLOOPY
+#define BUTTON_PRESSED(b) ((b) && !(prev_##b))
+#define DPAD_PRESSED BUTTON_PRESSED
+#else
+#define BUTTON_PRESSED(b) ((b) && !(prev_##b))
+#define DPAD_PRESSED BUTTON_PRESSED
+#endif
 
 // At the beginning of each frame, update previous button states
 void update_previous_buttons() {
 	hold_down_button = 0;
 
+#if PLATFORM == NECPCFX
     // Store the previous frame's input state
     oldpaddata = paddata;
-
 	padtype = eris_pad_type(0);
 	paddata = eris_pad_read(0);
-	
+#elif PLATFORM == CASLOOPY
+	#warning "CASIO LOOPY"
+    // Store the previous frame's input state
+    oldpad1 = newpad1;
+    oldpad0 = newpad0;
+
+    // Update the current input state
+    newpad1 = IO_CONTROLLER1;
+    newpad0 = IO_CONTROLLER0;
+#endif
+
     prev_a_button = a_button;
     prev_b_button = b_button;
     prev_up_button = up_button;
@@ -1578,132 +1136,27 @@ int title_cube_min_position = -64; // Maximum movement to the left;
 int angle_x = 0; // Slight angle to see the top
 int angle_y = 0;
 
-#define WAIT_CD 0x800
-#define CDDA_SILENT 0
-#define CDDA_NORMAL 0x03
-#define CDDA_LOOP 0x04
-
-static void cd_start_track(u8 start)
-{	
-	/*
-	 * 
-	 * To play a CD-DA track, you need to use both 0xD8 and 0xD9.
-	 * 0xD8 is for the starting track and 0xD9 is for the ending track as well and controlling whenever
-	 * or not the track should loop (after it's done playing).
-	*/
-	int r10;
-	u8 scsicmd10[10];
-	memset(scsicmd10, 0, sizeof(scsicmd10));
-	
-	scsicmd10[0] = 0xD8;
-	scsicmd10[1] = 0x00;
-	scsicmd10[2] = start;
-	scsicmd10[9] = 0x80; // 0x80, 0x40 LBA, 0x00 MSB, Other : Illegal
-	eris_low_scsi_command(scsicmd10,10);
-
-	/* Same here. Without this, it will freeze the whole application. */
-	r10 = WAIT_CD; 
-    while (r10 != 0) {
-        r10--;
-		__asm__ (
-        "nop\n"
-        "nop\n"
-        "nop\n"
-        "nop"
-        :
-        :
-        :
-		);
-    }
-	eris_low_scsi_status();
-}
-
-static void cd_end_track(u8 end, u8 loop)
-{	
-	/*
-	 * 
-	 * To play a CD-DA track, you need to use both 0xD8 and 0xD9.
-	 * 0xD8 is for the starting track and 0xD9 is for the ending track as well and controlling whenever
-	 * or not the track should loop (after it's done playing).
-	*/
-	int r10;
-	u8 scsicmd10[10];
-	
-	memset(scsicmd10, 0, sizeof(scsicmd10));
-	scsicmd10[0] = 0xD9;
-	scsicmd10[1] = loop; // 0 : Silent, 4: Loop, Other: Normal
-	scsicmd10[2] = end;
-	scsicmd10[9] = 0x80; // 0x80, 0x40 LBA, 0x00 MSB, Other : Illegal
-
-	eris_low_scsi_command(scsicmd10,10);
-	
-	/* Same here. Without this, it will freeze the whole application. */
-	r10 = WAIT_CD; 
-    while (r10 != 0) {
-        r10--;
-		__asm__ (
-        "nop\n"
-        "nop\n"
-        "nop\n"
-        "nop"
-        :
-        :
-        :
-		);
-    }
-	eris_low_scsi_status();
-
-}
-
-
-void cd_pausectrl(u8 resume)
-{
-	u8 scsicmd10[10];
-	
-	//eris_low_scsi_reset();
-	
-	if (resume > 1) resume = 1; // single bit; top 7 bits reserved
-	scsicmd10[0] = 0x47; // operation code PAUSE RESUME
-	scsicmd10[1] = 0; // Logical unit number
-	scsicmd10[2] = 0; // reserved
-	scsicmd10[3] = 0; // reserved
-	scsicmd10[4] = 0; // reserved
-	scsicmd10[5] = 0; // reserved
-	scsicmd10[6] = 0; // reserved
-	scsicmd10[7] = 0; // reserved
-	scsicmd10[8] = resume; // Resume bit
-	scsicmd10[9] = 0; // control
-	eris_low_scsi_command(scsicmd10,10);
-	
-	int r10 = 0x800; 
-    while (r10 != 0) {
-        r10--;
-		__asm__ (
-        "nop\n"
-        "nop\n"
-        "nop\n"
-        "nop"
-        :
-        :
-        :
-		);
-    }
-	eris_low_scsi_status();	
-}
-
+int mus = 0;
 
 int alt_state = GAME_STATE_TITLE;
 void Game_Switch(int state)
 {
 	alt_state = state;
+#if PLATFORM == NECPCFX
 	Clear_VDC(0);
-	
+#endif
+
+	mus++;
+
 	switch(state)
 	{
 		case GAME_STATE_TITLE:
+			Empty_Palette();
+		
 			z_counter = 0;
 			title_cube_position_z = 0;
 			
+#if PLATFORM == NECPCFX
 #ifdef CART_AUDIO
 			Reset_ADPCM();
 			Initialize_ADPCM(ADPCM_RATE_32000);
@@ -1713,45 +1166,60 @@ void Game_Switch(int state)
 			eris_low_adpcm_set_volume(1, 63, 63);
 			Play_ADPCM(1, ADPCM_OFFSET, sizeof(musicvox), 1, ADPCM_RATE_8000);
 #else
-			cd_pausectrl(0);
 			cd_start_track(2);
 			cd_end_track(3,CDDA_LOOP);
+			eris_low_cdda_set_volume(63,63);
 #endif
-			my_memcpy32(framebuffer_game, bg_title, SCREEN_WIDTH * SCREEN_HEIGHT);
+#endif
+			my_memcpy32(GAME_FRAMEBUFFER, bg_title, SCREEN_WIDTH * SCREEN_HEIGHT);
+			REFRESH_SCREEN(0, SCREEN_WIDTH * SCREEN_HEIGHT);
 
-			eris_king_set_kram_write(0, 1);
-			king_kram_write_buffer(framebuffer_game, SCREEN_WIDTH * SCREEN_HEIGHT);
-				
+			fadeInPalette(gamepal, 256);
 		break;
 		case GAME_STATE_MENU:
-			my_memcpy32(framebuffer_game, bg_title, SCREEN_WIDTH * SCREEN_HEIGHT);
-
-			eris_king_set_kram_write(0, 1);
-			king_kram_write_buffer(framebuffer_game, SCREEN_WIDTH * SCREEN_HEIGHT);
+			my_memcpy32(GAME_FRAMEBUFFER, bg_title, SCREEN_WIDTH * SCREEN_HEIGHT);
+			REFRESH_SCREEN(0, SCREEN_WIDTH * SCREEN_HEIGHT);
 			
 			// Draw menu options
 			PrintText("Select Mode", SCREEN_WIDTH_HALF - 50, 160);
 		break;
 		case GAME_STATE_ARCADE:
-			eris_low_cdda_set_volume(0,0);
-			Play_PSGSample(3, 3, 0);
-		
-			//fadeOutPalette(gamepal);
+			fadeOutPalette(gamepal, 256);
+			PLAY_SFX(0, READY_SFX);
 			
+#if PLATFORM == NECPCFX
+			eris_low_cdda_set_volume(0,0);
+			//fadeOutPalette(gamepal);
 #ifdef CART_AUDIO
 			Reset_ADPCM();
 			Initialize_ADPCM(ADPCM_RATE_32000);
-
 			/*eris_king_set_kram_write(ADPCM_OFFSET, 1);	
 			king_kram_write_buffer_bytes(race_music, sizeof(race_music));
 			eris_low_adpcm_set_volume(1, 63, 63);
 			Play_ADPCM(1, ADPCM_OFFSET, sizeof(race_music), 1, ADPCM_RATE_4000);*/
 #else
-			cd_start_track(3);
-			cd_end_track(4,CDDA_LOOP);		
+			mus = myrand() % 2;
+			if (mus > 0)
+			{
+				cd_start_track(3);
+				cd_end_track(4,CDDA_LOOP);		
+			}
+			else
+			{
+				cd_start_track(5);
+				cd_end_track(6,CDDA_LOOP);	
+				mus = 0;	
+			}
 			eris_low_cdda_set_volume(63/2,63/2);
 #endif
-			drop_interval = 150;
+#endif // NECPCFX
+			
+			my_memcpy32(GAME_FRAMEBUFFER, bg_game, SCREEN_WIDTH * SCREEN_HEIGHT);
+			REFRESH_SCREEN(0, SCREEN_WIDTH*SCREEN_HEIGHT);
+			fadeInPalette(gamepal, 256);
+
+
+			drop_interval = DEFAULT_INTERVAL;
 		
 			// Initialize Arcade Mode
 			memset(grid, 0, sizeof(grid));
@@ -1763,18 +1231,21 @@ void Game_Switch(int state)
 			force_redraw = 1;
 			backtitle = 0;
 
-			my_memcpy32(framebuffer_game, bg_game, SCREEN_WIDTH * SCREEN_HEIGHT);
+			
 		break;
 		case GAME_STATE_PUZZLE:
-		
+
+			fadeOutPalette(gamepal, 256);
+#if PLATFORM == NECPCFX
 			eris_low_cdda_set_volume(63/2,63/2);
-		
 			cd_start_track(4);
 			cd_end_track(5,CDDA_LOOP);
-			
-			my_memcpy32(framebuffer_game, bg_game, SCREEN_WIDTH * SCREEN_HEIGHT);
-			
-			drop_interval = 150;
+#endif
+			my_memcpy32(GAME_FRAMEBUFFER, bg_game, SCREEN_WIDTH * SCREEN_HEIGHT);
+			REFRESH_SCREEN(0, SCREEN_WIDTH * SCREEN_HEIGHT);
+			fadeInPalette(gamepal, 256);
+
+			drop_interval = DEFAULT_INTERVAL;
 			
 			// Initialize Puzzle Mode
 			current_puzzle_index = 0;
@@ -1789,34 +1260,42 @@ void Game_Switch(int state)
 
 		break;
 		case GAME_STATE_GAME_OVER_ARCADE:
+			PLAY_SFX(0, GO_SFX);
+#if PLATFORM == NECPCFX
 			eris_low_cdda_set_volume(0,0);
-			Play_PSGSample(4, 4, 0);
-			memset(framebuffer_game, 0, SCREEN_WIDTH * SCREEN_HEIGHT);
+#endif
+			memset(GAME_FRAMEBUFFER, 0, SCREEN_WIDTH * SCREEN_HEIGHT);
 		break;
 		case GAME_STATE_GAME_OVER_PUZZLE:
+			PLAY_SFX(0, GO_SFX);
+#if PLATFORM == NECPCFX
 			eris_low_cdda_set_volume(0,0);
-			Play_PSGSample(4, 4, 0);
-			memset(framebuffer_game, 0, SCREEN_WIDTH * SCREEN_HEIGHT);
+#endif
+			memset(GAME_FRAMEBUFFER, 0, SCREEN_WIDTH * SCREEN_HEIGHT);
 		break;
 		case GAME_STATE_CREDITS:
-			memset(framebuffer_game, 0, SCREEN_WIDTH * SCREEN_HEIGHT);
+			memset(GAME_FRAMEBUFFER, 0, SCREEN_WIDTH * SCREEN_HEIGHT);
 		break;
 	}
 }
 
+int cubes_to_process = 0;
+
 void draw_grid_partial() {
     // Define the area around the current piece to redraw
-    const int REDRAW_MARGIN = 3;  // Adjust this value based on your needs
+    const int REDRAW_MARGIN = 4;  // Adjust this value based on your needs
 
     int start_y = max(0, current_piece.y - REDRAW_MARGIN);
     int end_y = min(GRID_HEIGHT - 1, current_piece.y + REDRAW_MARGIN);
     int start_x = max(0, current_piece.x - REDRAW_MARGIN);
     int end_x = min(GRID_WIDTH - 1, current_piece.x + REDRAW_MARGIN);
 
+	//cubes_to_process = 0;
+
     // Only draw grid cells within the defined area
     for (int i = start_y; i <= end_y; i++) {
         for (int j = start_x; j <= end_x; j++) {
-            uint8_t cell_value = grid[i * GRID_WIDTH + j];
+            int cell_value = grid[i * GRID_WIDTH + j];
             if (cell_value) {
                 int tetromino_type = cell_value - 1;
                 int x = j * CUBE_SIZE;
@@ -1832,13 +1311,56 @@ void draw_grid_partial() {
 
                 // Process faces for this block
                 process_cube_block_faces(transformed_vertices, tetromino_type);
+                //cubes_to_process++;
             }
         }
     }
 }
 
-void Init_video_game()
+#if PLATFORM == UNIX
+// Function to load a background into a given array
+bool load_background(const char* filename, uint8_t* bg_array) {
+    SDL_Surface* bg_surface = IMG_Load(filename);
+    if (!bg_surface) {
+        fprintf(stderr, "Unable to load %s: %s\n", filename, IMG_GetError());
+        return false;
+    }
+    // Verify dimensions
+    if (bg_surface->w != SCREEN_WIDTH || bg_surface->h != SCREEN_HEIGHT) {
+        fprintf(stderr, "%s must be %d x %d pixels.\n", filename, SCREEN_WIDTH, SCREEN_HEIGHT);
+        SDL_FreeSurface(bg_surface);
+        return false;
+    }
+    // Verify 8-bit
+    if (bg_surface->format->BitsPerPixel != 8) {
+        fprintf(stderr, "%s must be an 8-bit image.\n", filename);
+        SDL_FreeSurface(bg_surface);
+        return false;
+    }
+    // Verify palette matches screen's palette
+    if (!bg_surface->format->palette) {
+        fprintf(stderr, "%s does not have a palette.\n", filename);
+        SDL_FreeSurface(bg_surface);
+        return false;
+    }
+    if (memcmp(bg_surface->format->palette->colors, screen->format->palette->colors, sizeof(SDL_Color) * screen->format->palette->ncolors) != 0) {
+        fprintf(stderr, "%s palette does not match screen palette.\n", filename);
+        SDL_FreeSurface(bg_surface);
+        return false;
+    }
+    // Copy pixels
+    memcpy(bg_array, bg_surface->pixels, SCREEN_WIDTH * SCREEN_HEIGHT * sizeof(uint8_t));
+    SDL_FreeSurface(bg_surface);
+    return true;
+}
+
+
+#endif
+
+
+int Init_video_game()
 {
+#if PLATFORM == NECPCFX
 #ifdef CART_AUDIO
 	Reset_ADPCM();
 	Initialize_ADPCM(ADPCM_RATE_32000);
@@ -1858,6 +1380,7 @@ void Init_video_game()
 	initTimer(1, 91);
 #endif
 
+
 	Load_PSGSample_RAM(drop_sfx, 0, sizeof(drop_sfx));
 	Load_PSGSample_RAM(explosion_sfx, 1, sizeof(explosion_sfx));
 	Load_PSGSample_RAM(select_sfx, 2, sizeof(select_sfx));
@@ -1865,11 +1388,119 @@ void Init_video_game()
 	Load_PSGSample_RAM(go_sfx, 4, sizeof(go_sfx));
 	
 	cd_pausectrl(0);
+#elif PLATFORM == CASLOOPY
+
+	maskInterrupts(0) ;
+	
+	// 0b00010000 for 256x224
+	VDP_MODE = 0b00010010;
+	
+    //Screen display mode
+    VDP_DISPMODE = 0x00;
+
+    //Set bitmap render mode to 4bit 512x512
+    //0x0 sets bitmap render mode to 8bit 256x256, along with a second 256x bitmap underneath.
+    // 0x1 sets bitmap to 8bit 256x512
+    VDP_BM_CTRL = 0x0001;
+
+    //Backdrop A/B refers to the "screen buffer"
+    //Backdrop refers to solid fill color for each.
+    VDP_BACKDROP_A = color(0,0,0);
+    VDP_BACKDROP_B = color(0,0,31);
+    
+    //Color PRIO enables/disables the A/B screens
+    VDP_COLORPRIO = 0b01000000;
+
+    // Which bg/obj/bm layers to show
+    VDP_LAYER_CTRL = 0b1010101001000110;
+    VDP_OBJ_CTRL = 0b000000100000000;
+    VDP_BG_CTRL = 0b0000000000001111;
+	
+	//These establish the bitmaps to cover the screen so that I can just blit the to the screen how I want adjust if you're using smaller bitmaps
+	//Set X/Y Screen of the bitmap sprite
+	VDP_BMn_SCREENX[0] = 0;
+	VDP_BMn_SCREENY[0] = 0;
+	
+	VDP_BMn_SCROLLY[0] = 0;
+
+	//Width/Height of bitmap sprite
+	VDP_BMn_WIDTH[0] = 255;
+	VDP_BMn_HEIGHT[0] = 511;
+
+	for(unsigned int i = 0; i < 256; i++){
+		VDP_PALETTE[i] = gamepal[i];
+	}
+
+#else
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+        fprintf(stderr, "SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
+        return 1;
+    }
+    
+    // Load texture
+    texture_surface = IMG_Load("textures.png");
+    if (!texture_surface) {
+        fprintf(stderr, "Unable to load texture: %s\n", IMG_GetError());
+        SDL_Quit();
+        return 1;
+    }
+
+    // Ensure texture is 32x224 pixels
+    if (texture_surface->w != 32 || texture_surface->h != 224) {
+        fprintf(stderr, "Texture must be 32x224 pixels.\n");
+        SDL_FreeSurface(texture_surface);
+        SDL_Quit();
+        return 1;
+    }
+
+    // Set the video mode to 8bpp and apply the texture's palette to the screen
+    screen = SDL_SetVideoMode(SCREEN_WIDTH, SCREEN_HEIGHT, 8, SDL_SWSURFACE);
+    if (!screen) {
+        fprintf(stderr, "SDL_SetVideoMode failed: %s\n", SDL_GetError());
+        SDL_FreeSurface(texture_surface);
+        SDL_Quit();
+        return 1;
+    }
+
+    // Apply the texture's palette to the screen
+    if (texture_surface->format->palette) {
+        SDL_SetPalette(screen, SDL_LOGPAL | SDL_PHYSPAL, texture_surface->format->palette->colors, 0, texture_surface->format->palette->ncolors);
+    } else {
+        fprintf(stderr, "Texture does not have a palette.\n");
+        SDL_FreeSurface(texture_surface);
+        SDL_Quit();
+        return 1;
+    }
+
+    // Copy texture pixels (palette indices)
+    memcpy(texture, texture_surface->pixels, 32 * 224 * sizeof(uint8_t));
+
+    SDL_FreeSurface(texture_surface);
+
+    // Load background images
+    if (!load_background("background256.png", bg_game)) {
+        SDL_Quit();
+        return 1;
+    }
+    
+    // Load background images
+    if (!load_background("title.png", bg_title)) {
+        SDL_Quit();
+        return 1;
+    }
+#endif
+	
+	return 0;
 }
 
 int main() 
 {
-	Init_video_game();
+	if (Init_video_game() == 1)
+	{
+		return 0;
+	}
+	
+	initDivs();
 
     // Initialize game state
     memset(grid, 0, sizeof(grid));
@@ -1880,10 +1511,15 @@ int main()
 
     // Initialize puzzles
     initialize_puzzles();
+	int running = 1;
+	int last_tick = 0;
+	int last_drop = 0;
+#if PLATFORM == UNIX
+    SDL_Event event;
+	last_tick = SDL_GetTicks();
+	last_drop = SDL_GetTicks();
+#endif
 
-    int running = 1;
-    int32_t last_tick = 0;
-    int32_t last_drop = 0;
     int32_t current_tick = 0;
     int32_t game_tick = 0;
 
@@ -1905,8 +1541,9 @@ int main()
 	right_button = 0;
 	hold_down_button = 0;
 
-    while (1) 
+    while (running) 
     {
+#if PLATFORM == NECPCFX || PLATFORM == CASLOOPY
 		current_tick++;
 		game_tick++;
 		
@@ -1922,7 +1559,9 @@ int main()
 		down_button = 0;
 		right_button = 0;
 		hold_down_button = 0;
+#endif
 
+#if PLATFORM == NECPCFX
 		if ( (paddata & (1 << 8)) && !(oldpaddata & (1 << 8)))
 		{
 			up_button = 1;
@@ -1950,6 +1589,114 @@ int main()
         {
 			start_button = 1;
 		}
+		
+#elif PLATFORM == CASLOOPY
+		if((newpad1 & P1_UP) && !(oldpad1 & P1_UP)) 
+		{
+			up_button = 1;
+		}
+		else if((newpad1 & P1_DOWN) && !(oldpad1 & P1_DOWN)) 
+		{
+			down_button = 1;
+		}
+        
+		if((newpad1 & P1_LEFT) && !(oldpad1 & P1_LEFT)) 
+		{
+			left_button = 1;
+		}
+		else if((newpad1 & P1_RIGHT) && !(oldpad1 & P1_RIGHT)) 
+		{
+			right_button = 1;
+		}
+        
+		if((newpad0 & P1_A) && !(oldpad0 & P1_A)) 
+        {
+			a_button = 1;
+		}
+		
+		if(((newpad0 & P1_START) && !(oldpad0 & P1_START))) 
+        {
+			start_button = 1;
+		}
+		
+#else
+        Uint32 current_tick = SDL_GetTicks();
+        last_tick = current_tick;
+        game_tick = current_tick - last_drop;
+        
+        update_previous_buttons();
+
+        // Handle events
+        while (SDL_PollEvent(&event)) 
+        {
+            switch (event.type) {
+                case SDL_QUIT:
+                    running = 0;
+                    break;
+				case SDL_KEYDOWN:
+					switch (event.key.keysym.sym) {
+						case SDLK_SPACE:
+							a_button = 1;
+							break;
+						case SDLK_RETURN:
+							start_button = 1;
+							break;
+						case SDLK_ESCAPE:
+							running = 0;
+							break;
+						case SDLK_UP:
+							up_button = 1;
+							break;
+						case SDLK_DOWN:
+							down_button = 1;
+							break;
+						case SDLK_LEFT:
+							left_button = 1;
+							break;
+						case SDLK_RIGHT:
+							right_button = 1;
+							break;
+						case SDLK_j:
+							b_button = 1;
+							break;
+						case SDLK_k:
+							select_button = 1;
+							break;
+					}
+					break;
+				case SDL_KEYUP:
+					switch (event.key.keysym.sym) {
+						case SDLK_SPACE:
+							a_button = 0;
+							break;
+						case SDLK_RETURN:
+							start_button = 0;
+							break;
+						case SDLK_UP:
+							up_button = 0;
+							break;
+						case SDLK_DOWN:
+							down_button = 0;
+							break;
+						case SDLK_LEFT:
+							left_button = 0;
+							break;
+						case SDLK_RIGHT:
+							right_button = 0;
+							break;
+						case SDLK_j:
+							b_button = 0;
+							break;
+						case SDLK_k:
+							select_button = 0;
+							break;
+					}
+					break;
+                default:
+                    break;
+            }
+        }
+#endif
 		
 		// Handle game states
         switch (game_state) 
@@ -1984,9 +1731,12 @@ int main()
 						title_cube_move_direction = 1; // Change direction to right
 					}	
 				}
-				
-				my_memcpy32(framebuffer_game + (SCREEN_WIDTH * 45), bg_title + (SCREEN_WIDTH * 45), SCREEN_WIDTH * 100);
-				
+
+#ifdef FORCE_FULLSCREEN_DRAWS
+				my_memcpy32(GAME_FRAMEBUFFER, bg_title, SCREEN_WIDTH * SCREEN_HEIGHT);
+#else
+				my_memcpy32(GAME_FRAMEBUFFER + (SCREEN_WIDTH * 45), bg_title + (SCREEN_WIDTH * 45), SCREEN_WIDTH * 100);
+#endif
 				// Draw rotating cube with updated position
 				draw_title_cube(title_cube_rotation_x, title_cube_rotation_y, title_cube_rotation_z, title_cube_position_x, -20, title_cube_position_z);
 
@@ -2000,30 +1750,33 @@ int main()
 					blink_counter = 0;
 				}
 				
-				if (start_button) {
+				if (BUTTON_PRESSED(start_button)) {
 					Game_Switch(GAME_STATE_MENU);
 				}
 				
-				eris_king_set_kram_write((SCREEN_WIDTH * 45), 1);
-				king_kram_write_buffer(framebuffer_game + (SCREEN_WIDTH * 45), SCREEN_WIDTH * 120);
+				REFRESH_SCREEN((SCREEN_WIDTH * 45), SCREEN_WIDTH*120);
 
 				
                 break;
             case GAME_STATE_MENU:
-				if (up_button) {
-					Play_PSGSample(1, 1, 0);
+				if (BUTTON_PRESSED(up_button)) {
+					PLAY_SFX(0, EXPLOSION_SFX);
 					menu_selection--;
 				}
-				else if (down_button) {
-					Play_PSGSample(1, 1, 0);
+				if (BUTTON_PRESSED(down_button)) {
+					PLAY_SFX(0, EXPLOSION_SFX);
 					menu_selection++;
 				}
 				
 				if (menu_selection < 0) menu_selection = 0;
 				if (menu_selection > 1) menu_selection = 2;
 				
-                // Only update text portion
-				my_memcpy32(framebuffer_game + (SCREEN_WIDTH * 90), bg_title + (SCREEN_WIDTH * 90), SCREEN_WIDTH * 48);
+
+#ifdef FORCE_FULLSCREEN_DRAWS
+				my_memcpy32(GAME_FRAMEBUFFER, bg_title, SCREEN_WIDTH * SCREEN_HEIGHT);
+#else
+				my_memcpy32(GAME_FRAMEBUFFER + (SCREEN_WIDTH * 90), bg_title + (SCREEN_WIDTH * 90), SCREEN_WIDTH * 48);
+#endif
 
 				switch(menu_selection)
 				{
@@ -2048,8 +1801,7 @@ int main()
 					break;
 				}
 
-				eris_king_set_kram_write((SCREEN_WIDTH * 90), 1);
-				king_kram_write_buffer(framebuffer_game + (SCREEN_WIDTH * 90), SCREEN_WIDTH * 48);
+				REFRESH_SCREEN(SCREEN_WIDTH*90, SCREEN_WIDTH*48);
 
 				if (BUTTON_PRESSED(a_button)) 
 				{
@@ -2071,21 +1823,21 @@ int main()
 				
 				if (!game_over) 
 				{
-					if (BUTTON_PRESSED(right_button)) {
+					if (DPAD_PRESSED(right_button)) {
 						if (!check_collision(current_piece.x - 1, current_piece.y, current_piece.rotation))
 						{
 							current_piece.x--; // Its reversed due to how pieces are drawn
 							force_redraw = 1;
 						}
 					}
-					else if (BUTTON_PRESSED(left_button)) {
+					else if (DPAD_PRESSED(left_button)) {
 						if (!check_collision(current_piece.x + 1, current_piece.y, current_piece.rotation))
 						{
 							current_piece.x++; // Its reversed due to how pieces are drawn
 							force_redraw = 1;
 						}
 					}
-					if (BUTTON_PRESSED(down_button)) {
+					if (DPAD_PRESSED(down_button)) {
 						if (!check_collision(current_piece.x, current_piece.y + 1, current_piece.rotation))
 						{
 							current_piece.y++;
@@ -2096,7 +1848,7 @@ int main()
 							game_tick = drop_interval + 1;
 						}
 					}
-					if (BUTTON_PRESSED(a_button)) {
+					if (DPAD_PRESSED(a_button)) {
 						int new_rotation = (current_piece.rotation + 1) & 3;
 						if (!check_collision(current_piece.x, current_piece.y, new_rotation))
 						{
@@ -2109,7 +1861,7 @@ int main()
 					// Automatic drop
 					if (game_tick > drop_interval) 
 					{
-						last_drop = game_tick;
+						last_drop = current_tick;
 						game_tick = 0;
 						if (!check_collision(current_piece.x, current_piece.y + 1, current_piece.rotation)) {
 							current_piece.y++;
@@ -2117,7 +1869,7 @@ int main()
 						} 
 						else 
 						{
-							Play_PSGSample(0, 0, 0);
+							PLAY_SFX(0, DROP_SFX);
 							
 							merge_piece();
 							if (game_over) 
@@ -2130,7 +1882,7 @@ int main()
 							} 
 							else 
 							{
-								my_memcpy32(framebuffer_game, bg_game, SCREEN_WIDTH * SCREEN_HEIGHT);
+								my_memcpy32(GAME_FRAMEBUFFER, bg_game, SCREEN_WIDTH * SCREEN_HEIGHT);
 								clear_lines();
 								
 								if (drop_interval > 5)
@@ -2169,7 +1921,7 @@ int main()
 				if (force_redraw) 
 				{
 #ifdef FORCE_FULLSCREEN_DRAWS // For platforms that are fast enough, this can avoid some visual glitches
-					my_memcpy32(framebuffer_game, bg_game, SCREEN_WIDTH * SCREEN_HEIGHT);
+					my_memcpy32(GAME_FRAMEBUFFER, bg_game, SCREEN_WIDTH * SCREEN_HEIGHT);
 					draw_current_piece();
 					draw_grid();
 #else
@@ -2201,14 +1953,11 @@ int main()
 						PrintText(myitoa(score), 10, 10);
 					}
 
-					eris_king_set_kram_write(0, 1);
-					king_kram_write_buffer(framebuffer_game, SCREEN_WIDTH*SCREEN_HEIGHT);
+					REFRESH_SCREEN(0, SCREEN_WIDTH*SCREEN_HEIGHT);
 
 					force_redraw = 0;
 					force_redraw_puzzle = 0;
 				}
-
-
 
 
                 break;
@@ -2222,13 +1971,12 @@ int main()
                 PrintText("Game Over!", SCREEN_WIDTH_HALF - 40, SCREEN_HEIGHT_HALF - 10);
                 PrintText("Press Start to return", SCREEN_WIDTH_HALF - 80, SCREEN_HEIGHT_HALF + 10);
 
-				eris_king_set_kram_write(0, 1);
-				king_kram_write_buffer(framebuffer_game, SCREEN_WIDTH*SCREEN_HEIGHT);
+				REFRESH_SCREEN(0, SCREEN_WIDTH*SCREEN_HEIGHT);
 
                 break;
             case GAME_STATE_CREDITS:
                 // Clear screen
-                memset(framebuffer_game, 0, SCREEN_WIDTH * SCREEN_HEIGHT);
+                memset(GAME_FRAMEBUFFER, 0, SCREEN_WIDTH * SCREEN_HEIGHT);
 
                 // Draw game over texts
                 PrintText("CREDITS", 16, 16);
@@ -2247,21 +1995,29 @@ int main()
 					Game_Switch(GAME_STATE_TITLE);
 				}
 				
-				eris_king_set_kram_write(0, 1);
-				king_kram_write_buffer(framebuffer_game, SCREEN_WIDTH*SCREEN_HEIGHT);
+				REFRESH_SCREEN(0, SCREEN_WIDTH*SCREEN_HEIGHT);
             break;
             default:
                 break;
         }
         
-		#ifdef DEBUGFPS
-		print_at(0, 1, 12, myitoa(getFps()));
+
+
+        game_state = alt_state;
+        #if PLATFORM == NECPCFX
+			#ifdef DEBUGFPS
+			print_at(0, 1, 12, myitoa(getFps()));
+			#endif
+			vsync(0);
+			++nframe;
+		#elif PLATFORM == CASLOOPY
+			CopyFrameBuffer((int*) framebuffer_game, (int*) VDP_BITMAP_VRAM );
+			BiosVsync();
 		#else
-		vsync(0);
+			if(real_FPS > SDL_GetTicks()-current_tick) SDL_Delay(real_FPS-(SDL_GetTicks()-current_tick));
+			SDL_Flip(screen);
 		#endif
-        
-		game_state = alt_state;
-		++nframe;
+
     }
 
     return 0;

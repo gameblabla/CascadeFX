@@ -576,7 +576,7 @@ __attribute__ ((interrupt)) void samplepsg_timer_irq (void)
 {
 	const int i = 0;
 	eris_timer_ack_irq();
-
+	increment_zda_timer_count();
 #if 1
 	#if SAMPLES_PSG_NUMBER > 1
 	for(int i=0;i<SAMPLES_PSG_NUMBER;i++)
@@ -634,7 +634,7 @@ __attribute__ ((interrupt)) void samplepsg_timer_irq (void)
 #endif
 }
 
-uint32_t nframe = 0;
+int nframe = 0;
 
 
 int getFps()
@@ -820,7 +820,81 @@ void putnumber_at(int x, int y, int pal, int len, int value)
 
 
 /* CD-ROM */
-/*
+
+
+void cd_start_track(u8 start)
+{	
+	/*
+	 * 
+	 * To play a CD-DA track, you need to use both 0xD8 and 0xD9.
+	 * 0xD8 is for the starting track and 0xD9 is for the ending track as well and controlling whenever
+	 * or not the track should loop (after it's done playing).
+	*/
+	int r10;
+	u8 scsicmd10[10];
+	memset(scsicmd10, 0, sizeof(scsicmd10));
+	
+	scsicmd10[0] = 0xD8;
+	scsicmd10[1] = 0x00;
+	scsicmd10[2] = start;
+	scsicmd10[9] = 0x80; // 0x80, 0x40 LBA, 0x00 MSB, Other : Illegal
+	eris_low_scsi_command(scsicmd10,10);
+
+	/* Same here. Without this, it will freeze the whole application. */
+	r10 = WAIT_CD; 
+    while (r10 != 0) {
+        r10--;
+		__asm__ (
+        "nop\n"
+        "nop\n"
+        "nop\n"
+        "nop"
+        :
+        :
+        :
+		);
+    }
+	eris_low_scsi_status();
+}
+
+void cd_end_track(u8 end, u8 loop)
+{	
+	/*
+	 * 
+	 * To play a CD-DA track, you need to use both 0xD8 and 0xD9.
+	 * 0xD8 is for the starting track and 0xD9 is for the ending track as well and controlling whenever
+	 * or not the track should loop (after it's done playing).
+	*/
+	int r10;
+	u8 scsicmd10[10];
+	
+	memset(scsicmd10, 0, sizeof(scsicmd10));
+	scsicmd10[0] = 0xD9;
+	scsicmd10[1] = loop; // 0 : Silent, 4: Loop, Other: Normal
+	scsicmd10[2] = end;
+	scsicmd10[9] = 0x80; // 0x80, 0x40 LBA, 0x00 MSB, Other : Illegal
+
+	eris_low_scsi_command(scsicmd10,10);
+	
+	/* Same here. Without this, it will freeze the whole application. */
+	r10 = WAIT_CD; 
+    while (r10 != 0) {
+        r10--;
+		__asm__ (
+        "nop\n"
+        "nop\n"
+        "nop\n"
+        "nop"
+        :
+        :
+        :
+		);
+    }
+	eris_low_scsi_status();
+
+}
+
+
 void cd_pausectrl(u8 resume)
 {
 	u8 scsicmd10[10];
@@ -839,5 +913,19 @@ void cd_pausectrl(u8 resume)
 	scsicmd10[8] = resume; // Resume bit
 	scsicmd10[9] = 0; // control
 	eris_low_scsi_command(scsicmd10,10);
+	
+	int r10 = 0x800; 
+    while (r10 != 0) {
+        r10--;
+		__asm__ (
+        "nop\n"
+        "nop\n"
+        "nop\n"
+        "nop"
+        :
+        :
+        :
+		);
+    }
+	eris_low_scsi_status();	
 }
-*/
