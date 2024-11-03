@@ -11,9 +11,9 @@ extern uint32_t __data_link_end __asm("__data_link_end");
 extern uint32_t __data_load_start __asm("__data_load_start");
 
 /* ORAM data symbols */
-extern uint32_t __oram_load_start __asm("__oram_load_start");
-extern uint32_t __oram_start __asm("__oram_start");
-extern uint32_t __oram_end __asm("__oram_end");
+extern uint32_t __stack_load_start __asm("__stack_load_start");
+extern uint32_t __stack_start __asm("__stack_start");
+extern uint32_t __stack_end __asm("__stack_end");
 
 typedef void(init_t)(void);
 
@@ -39,9 +39,9 @@ void crt_init(void)
     }
 
     /* Initialize ORAM */
-    start = &__oram_start;
-    end = &__oram_end;
-    load = &__oram_load_start;
+    start = &__stack_start;
+    end = &__stack_end;
+    load = &__stack_load_start;
     while (start < end) {
         *start++ = *load++;
     }

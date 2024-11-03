@@ -3,9 +3,7 @@
  * LICENSE : MIT (except when stated otherwise)
 */
 
-#define NECPCFX 1 
-#define UNIX 2 
-#define CASLOOPY 3
+#include "defines.h"
 
 //#define CART_AUDIO 1
 #define _16BITS_WRITES
@@ -52,7 +50,6 @@ void Empty_Palette() {};
 #endif
 
 #include "font_drawing.h"
-#include "defines.h"
 #include "common.h"
 #include "trig.h"
 
@@ -239,9 +236,12 @@ static inline int compare_faces(const void *a, const void *b) {
 
 #if PLATFORM == NECPCFX
 #include "draw_pcfx.c"
+#elif PLATFORM == CASLOOPY
+#include "draw_casloopy.c"
 #else
 #include "draw_pc.c"
 #endif
+
 
 static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D p3, int tetromino_type) 
 {
@@ -255,14 +255,14 @@ static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D 
     if ((points + 2)->y < min_y) min_y = (points + 2)->y; else if ((points + 2)->y > max_y) max_y = (points + 2)->y;
     if ((points + 3)->y < min_y) min_y = (points + 3)->y; else if ((points + 3)->y > max_y) max_y = (points + 3)->y;
     
-	if (min_y <= 0) min_y = 0;
-	if (max_y >= SCREEN_HEIGHT) max_y = SCREEN_HEIGHT;
+	//if (min_y <= 0) min_y = 0;
+	//if (max_y >= SCREEN_HEIGHT) max_y = SCREEN_HEIGHT;
 	
     EdgeData edges_array[4];
     EdgeData *edges = edges_array;
 
     // Precompute edge data and initialize edge positions in a single loop
-    for (int i = 0; i < 4; i++) {
+    for (int16_t i = 0; i < 4; i++) {
         Point2D *pA = points + i;
         Point2D *pB = points + ((i + 1) & 3);  // Use bitwise AND to avoid modulo operation
 
@@ -319,7 +319,7 @@ static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D 
         int *v_int_ptr = v_intersections;
 
         // Process edges and update positions in a single loop
-        for (int i = 0; i < 4; i++) {
+        for (int16_t i = 0; i < 4; i++) {
             EdgeData *edge = edges + i;
             if (y >= edge->y_start) 
             {
@@ -944,7 +944,7 @@ void draw_title_cube(int angle_x, int angle_y, int angle_z, int cube_position_x,
         // Rotate cube
         v = rotateX(v, angle_x);
         v = rotateY(v, angle_y);
-        v = rotateZ(v, angle_z);
+        //v = rotateZ(v, angle_z);
 
         // Translate cube
         v.x += cube_position_x;

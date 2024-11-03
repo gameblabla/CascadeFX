@@ -5,3 +5,7 @@
 obj/
 CasioLoopy/obj
 CasioLoopy/*.bin
+*.sav
+src/*.bin
+src/*.bmp
+src/Rupi

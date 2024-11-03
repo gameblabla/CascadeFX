@@ -1,6 +1,10 @@
 #ifndef DEFINES_H
 #define DEFINES_H
 
+#define NECPCFX 1 
+#define UNIX 2 
+#define CASLOOPY 3
+
 // Base screen dimensions for scaling
 #define BASE_SCREEN_WIDTH 256
 #define BASE_SCREEN_HEIGHT 240
@@ -71,6 +75,14 @@
 #define P1_START 0x0002
 #define P1_TL 0x0004
 #define P1_TR 0x0008
+
+// Place critical functions and data in ORAM
+
+#if PLATFORM == CASLOOPY
+#define ORAM_DATA __attribute__((section(".oram_data"), used, aligned(4)))
+#else
+#define ORAM_DATA
+#endif
 
 
 #endif

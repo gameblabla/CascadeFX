@@ -5,112 +5,121 @@ OUTPUT_ARCH(sh)
 
 MEMORY {
     /* Console side */
-    RAM (rwx) : ORIGIN = 0x09000000, LENGTH = 512K - STACKSIZE
+    RAM (rwx) : ORIGIN = 0x09000000, LENGTH = (512K - STACKSIZE)
     /* Cartridge side */
     ROM (rwx) : ORIGIN = 0x0E000000, LENGTH = 4M
     SRAM (rwx) : ORIGIN = 0x02000000, LENGTH = SRAMSIZE
+    /* ORAM (On-Chip Memory, only 1 kilobyte) */
+    ORAM (rx) : ORIGIN = 0x0F000000, LENGTH = 1K
 }
 
 SECTIONS {
-  . = ORIGIN(ROM);
+    /* Start placing sections from ROM origin */
+    . = ORIGIN(ROM);
 
-  .header : {
-    KEEP(*(.header.pointers))
-    KEEP(*(.header.copyright))
+    .header : {
+        KEEP(*(.header.pointers))
+        KEEP(*(.header.copyright))
 
-    . = 0x80;
-  } >ROM =0xFF
-  
-  .vectors ALIGN(4) : SUBALIGN(4) {
-    KEEP(*(.vectors))
+        . = 0x80;
+    } >ROM =0xFF
 
-    . = 0x1D0;
+    .vectors ALIGN(4) : SUBALIGN(4) {
+        KEEP(*(.vectors))
 
-    /* 560 bytes spare in vectable, put small functions here */
-    KEEP(*(.lowfunc))
-    KEEP(*(.smallfunc))
-  } >ROM =0xFF
+        . = 0x1D0;
 
-  . = ORIGIN(ROM) + 0x480;
+        /* 560 bytes spare in vectable, put small functions here */
+        KEEP(*(.lowfunc))
+        KEEP(*(.smallfunc))
+    } >ROM =0xFF
 
-  .text ALIGN(4) : SUBALIGN(4)
-  {
-    *(.text.startup)
-    *(.text)
-    *(.text.*)
+    . = ORIGIN(ROM) + 0x480;
 
-    /*
-    This and the following `. = ALIGN(4)` expressions are intended to
-    encourage LMA alignment. Without this, the load addresses of AT>
-    sections such as .data can be misaligned, causes issues in crt0.c
-    if `.data` is copied using 32-bit reads/writes.
-    */
-    . = ALIGN(4);
-  } >ROM =0xFF
+    .text ALIGN(4) : SUBALIGN(4) {
+        *(.text.startup)
+        *(.text)
+        *(.text.*)
 
-  __text_link_start = ADDR(.text);
-  __text_link_end = ADDR(.text) + SIZEOF(.text);
+        . = ALIGN(4);
+    } >ROM =0xFF
 
-  .rodata ALIGN(4) : SUBALIGN(4) {
-    *(.rodata)
-    *(.rodata.*)
+    __text_link_start = ADDR(.text);
+    __text_link_end = ADDR(.text) + SIZEOF(.text);
 
-    . = ALIGN(4);
-  } >ROM
+    .rodata ALIGN(4) : SUBALIGN(4) {
+        *(.rodata)
+        *(.rodata.*)
 
-  __rodata_link_start = ADDR(.rodata);
-  __rodata_link_end = ADDR(.rodata) + SIZEOF(.rodata);
+        . = ALIGN(4);
+    } >ROM
 
-  .ctors ALIGN(4) : SUBALIGN(4)
-  {
-    KEEP(*(.ctors))
-    KEEP(*(.ctors.*))
+    __rodata_link_start = ADDR(.rodata);
+    __rodata_link_end = ADDR(.rodata) + SIZEOF(.rodata);
 
-    . = ALIGN(4);
-  } >ROM
+    .ctors ALIGN(4) : SUBALIGN(4) {
+        KEEP(*(.ctors))
+        KEEP(*(.ctors.*))
 
-  __ctors_link_start = ADDR(.ctors);
-  __ctors_link_end = ADDR(.ctors) + SIZEOF(.ctors);
+        . = ALIGN(4);
+    } >ROM
 
-  /* reserve 256 bytes at the beginning of RAM for the BIOS */
-  . = ORIGIN(RAM) + 0x100;
+    __ctors_link_start = ADDR(.ctors);
+    __ctors_link_end = ADDR(.ctors) + SIZEOF(.ctors);
 
-  .data ALIGN(4) : SUBALIGN(4) {
-    *(.data)
-    *(.data.*)
+    /* Reserve 256 bytes at the beginning of RAM for the BIOS */
+    . = ORIGIN(RAM) + 0x100;
 
-    KEEP(*(.ramtext))
-    KEEP(*(.ramfunc))
+    .data ALIGN(4) : SUBALIGN(4) {
+        *(.data)
+        *(.data.*)
 
-    . = ALIGN(4);
-  } >RAM AT> ROM
+        KEEP(*(.ramtext))
+        KEEP(*(.ramfunc))
 
-  __data_link_start = ADDR(.data);
-  __data_link_end = ADDR(.data) + SIZEOF(.data);
-  __data_load_start = LOADADDR(.data);
+        . = ALIGN(4);
+    } >RAM AT> ROM
 
-  .bss ALIGN(4) (NOLOAD) : SUBALIGN(4) {
-    *(.bss)
-    *(.bss.*)
-    *(COMMON)
+    __data_link_start = ADDR(.data);
+    __data_link_end = ADDR(.data) + SIZEOF(.data);
+    __data_load_start = LOADADDR(.data);
 
-    . = ALIGN(4);
-  } >RAM
+    .bss ALIGN(4) (NOLOAD) : SUBALIGN(4) {
+        *(.bss)
+        *(.bss.*)
+        *(COMMON)
 
-  __bss_link_start = ADDR(.bss);
-  __bss_link_end = ADDR(.bss) + SIZEOF(.bss);
-  
-  /* Go back and pad ROM now that we know where .data ends. */
-  . = LOADADDR(.data) + SIZEOF(.data);
-  .rompad : {
-    /* Always at least one byte of padding, LD won't output empty section */
-    BYTE(0xFF);
-    . = ALIGN(2);
-    _even_padded = .;
-    . = ALIGN(4096);
-  } >ROM =0xFF
+        . = ALIGN(4);
+    } >RAM
 
-  INCLUDE "tools/debug.ld"
+    __bss_link_start = ADDR(.bss);
+    __bss_link_end = ADDR(.bss) + SIZEOF(.bss);
+
+    /* Go back and pad ROM now that we know where .data ends. */
+    . = LOADADDR(.data) + SIZEOF(.data);
+    .rompad : {
+        /* Always at least one byte of padding, LD won't output empty section */
+        BYTE(0xFF);
+        . = ALIGN(2);
+        _even_padded = .;
+        . = ALIGN(4096);
+    } >ROM =0xFF
+
+    /* Reset location counter to ORIGIN(ORAM) for ORAM sections */
+    . = ORIGIN(ORAM);
+
+    /* Place ORAM data at 0x0F000000 with load address in ROM */
+    .oram_data ALIGN(4) : {
+        KEEP(*(.oram_data))
+    } >ORAM AT> ROM
+
+    /* Define symbols for .oram_data */
+    __oram_load_start = LOADADDR(.oram_data);
+    __oram_start = ADDR(.oram_data);
+    __oram_end = ADDR(.oram_data) + SIZEOF(.oram_data);
+
+    /* Include additional debug sections */
+    INCLUDE "tools/debug.ld"
 }
 
 __clheader_romfirst = ADDR(.vectors);
@@ -118,6 +127,7 @@ __clheader_romlast = _even_padded - 2;
 __clheader_sramfirst = ORIGIN(SRAM);
 __clheader_sramlast = ORIGIN(SRAM) + LENGTH(SRAM) - 1;
 
+/* Relocate stack back to RAM */
 __stack_end = ORIGIN(RAM) + LENGTH(RAM) + STACKSIZE;
 
 __vbr_link_start = ADDR(.vectors);

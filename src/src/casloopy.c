@@ -62,20 +62,12 @@ void *memset(void *dest, int c, size_t n){
 	return dest;
 }
 
-
-// Function to fade in from black to pict6pal
+// Function to fade in from black to the target palette
 void fadeInPalette(const uint16_t* topal, int colors) {
-	uint32_t tempPalette[PALETTE_SIZE];
-	
-    // Initialize tempPalette to black
-    for(unsigned int i = 0; i < PALETTE_SIZE; i++) {
-        tempPalette[i] = 0x000000; // Assuming RGB color format, black
-    }
-    
-    // Gradually fade in pict6pal over FADE_STEPS
-    for(int step = 1; step <= FADE_STEPS; step++) {
-        for(unsigned int i = 0; i < PALETTE_SIZE; i++) {
-            // Extract RGB components from pict6pal[i] (RGB555 format)
+    // Gradually fade in 'topal' over FADE_STEPS
+    for (int step = 1; step <= FADE_STEPS; step++) {
+        for (unsigned int i = 0; i < PALETTE_SIZE; i++) {
+            // Extract RGB components from 'topal[i]' (RGB555 format)
             uint8_t redTarget = (topal[i] >> 10) & 0x1F;
             uint8_t greenTarget = (topal[i] >> 5) & 0x1F;
             uint8_t blueTarget = topal[i] & 0x1F;
@@ -86,61 +78,40 @@ void fadeInPalette(const uint16_t* topal, int colors) {
             uint8_t blue = (blueTarget * step) / FADE_STEPS;
 
             // Combine components back into a single RGB555 color value
-            tempPalette[i] = (red << 10) | (green << 5) | blue;
+            uint16_t color = (red << 10) | (green << 5) | blue;
+
+            // Write directly to 'VDP_PALETTE'
+            VDP_PALETTE[i] = color;
         }
-        
-        // Copy tempPalette to VDP_PALETTE to display the current fade step
-        for(unsigned int i = 0; i < PALETTE_SIZE; i++) {
-            VDP_PALETTE[i] = tempPalette[i];
-        }
-        
-        // Wait for next video frame update here
-        // You need to implement this function based on your system's capabilities
-		BiosVsync();
+
+        // Wait for the next video frame update here
+        BiosVsync();
     }
 }
 
-// Function to fade out from pict6pal to black
+// Function to fade out from the source palette to black
 void fadeOutPalette(const uint16_t* frompal, int colors) {
-    uint32_t tempPalette[PALETTE_SIZE];
-    uint32_t fpal[PALETTE_SIZE];
-    memcpy32(tempPalette, frompal, PALETTE_SIZE/4);
-    memcpy32(fpal, frompal, PALETTE_SIZE/4);
-    
-    for(unsigned int i = 0; i < PALETTE_SIZE; i++) 
-    {
-        // Extract RGB components from frompal[i] (RGB555 format)
-        uint8_t red = (frompal[i] >> 10) & 0x1F;
-        uint8_t green = (frompal[i] >> 5) & 0x1F;
-        uint8_t blue = frompal[i] & 0x1F;
+    // Gradually fade out 'frompal' to black over FADE_STEPS
+    for (int step = 1; step <= FADE_STEPS; step++) {
+        for (unsigned int i = 0; i < PALETTE_SIZE; i++) {
+            // Extract RGB components from 'frompal[i]' (RGB555 format)
+            uint8_t red = (frompal[i] >> 10) & 0x1F;
+            uint8_t green = (frompal[i] >> 5) & 0x1F;
+            uint8_t blue = frompal[i] & 0x1F;
 
-        // Convert RGB555 to RGB888 for processing
-        tempPalette[i] = ((red * 255 / 31) << 16) | ((green * 255 / 31) << 8) | (blue * 255 / 31);
-    }
+            // Calculate the fade for each color component based on the current step
+            uint8_t redFade = (red * (FADE_STEPS - step)) / FADE_STEPS;
+            uint8_t greenFade = (green * (FADE_STEPS - step)) / FADE_STEPS;
+            uint8_t blueFade = (blue * (FADE_STEPS - step)) / FADE_STEPS;
 
-    // Gradually fade out frompal to black over FADE_STEPS
-    for(int step = 1; step <= FADE_STEPS; step++) 
-    {
-        for(unsigned int i = 0; i < PALETTE_SIZE; i++) {
-            // Convert back to RGB555 components for decrement calculation
-            uint8_t red = (tempPalette[i] >> 16) & 0xFF;
-            uint8_t green = (tempPalette[i] >> 8) & 0xFF;
-            uint8_t blue = tempPalette[i] & 0xFF;
+            // Combine components back into a single RGB555 color value
+            uint16_t color = (redFade << 10) | (greenFade << 5) | blueFade;
 
-            // Calculate the decrement for each color component based on the current step
-            uint8_t redDecrement = ((red * (FADE_STEPS - step)) / FADE_STEPS) * 31 / 255;
-            uint8_t greenDecrement = ((green * (FADE_STEPS - step)) / FADE_STEPS) * 31 / 255;
-            uint8_t blueDecrement = ((blue * (FADE_STEPS - step)) / FADE_STEPS) * 31 / 255;
-
-            // Combine components back into a single RGB555 color value for tempPalette
-            fpal[i] = (redDecrement << 10) | (greenDecrement << 5) | blueDecrement;
-        }
-        
-        // Copy tempPalette to VDP_PALETTE to display the current fade step
-        for(unsigned int i = 0; i < PALETTE_SIZE; i++) {
-            VDP_PALETTE[i] = fpal[i];
+            // Write directly to 'VDP_PALETTE'
+            VDP_PALETTE[i] = color;
         }
 
-       BiosVsync();
+        // Wait for the next video frame update here
+        BiosVsync();
     }
 }
