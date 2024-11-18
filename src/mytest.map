@@ -1,0 +1,914 @@
+Archive member included to satisfy reference by file (symbol)
+
+/opt/v810-gcc/lib//liberis.a(v810.o)
+                              pcfx.o (irq_enable)
+/opt/v810-gcc/lib//liberis.a(tetsu.o)
+                              main.o (eris_tetsu_init)
+/opt/v810-gcc/lib//liberis.a(king.o)
+                              main.o (eris_king_init)
+/opt/v810-gcc/lib//liberis.a(romfont.o)
+                              pcfx.o (eris_romfont_get)
+/opt/v810-gcc/lib//liberis.a(std.o)
+                              pcfx.o (strlen32)
+/opt/v810-gcc/lib//liberis.a(timer.o)
+                              pcfx.o (eris_timer_init)
+/opt/v810-gcc/lib//liberis.a(cd.o)
+                              pcfx.o (eris_cd_read)
+/opt/v810-gcc/lib//liberis.a(pad.o)
+                              main.o (eris_pad_init)
+/opt/v810-gcc/lib//liberis.a(7up.o)
+                              pcfx.o (eris_sup_set)
+/opt/v810-gcc/lib//liberis.a(pad.o)
+                              /opt/v810-gcc/lib//liberis.a(pad.o) (eris_low_pad_init)
+/opt/v810-gcc/lib//liberis.a(soundbox.o)
+                              pcfx.o (eris_low_psg_set_main_volume)
+/opt/v810-gcc/lib//liberis.a(7up.o)
+                              /opt/v810-gcc/lib//liberis.a(7up.o) (eris_low_sup_init)
+/opt/v810-gcc/lib//liberis.a(scsi.o)
+                              pcfx.o (eris_low_scsi_status)
+/opt/v810-gcc/v810/lib//libc.a(lib_a-malloc.o)
+                              pcfx.o (malloc)
+/opt/v810-gcc/v810/lib//libc.a(lib_a-memcpy.o)
+                              pcfx.o (memcpy)
+/opt/v810-gcc/v810/lib//libc.a(lib_a-memmove.o)
+                              /opt/v810-gcc/v810/lib//libc.a(lib_a-memcpy.o) (memmove)
+/opt/v810-gcc/v810/lib//libc.a(lib_a-memset.o)
+                              main.o (memset)
+/opt/v810-gcc/v810/lib//libc.a(lib_a-nano-freer.o)
+                              /opt/v810-gcc/v810/lib//libc.a(lib_a-malloc.o) (_free_r)
+/opt/v810-gcc/v810/lib//libc.a(lib_a-nano-mallocr.o)
+                              /opt/v810-gcc/v810/lib//libc.a(lib_a-malloc.o) (_malloc_r)
+/opt/v810-gcc/v810/lib//libc.a(lib_a-sbrkr.o)
+                              /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-mallocr.o) (_sbrk_r)
+/opt/v810-gcc/v810/lib//libc.a(lib_a-sprintf.o)
+                              pcfx.o (sprintf)
+/opt/v810-gcc/v810/lib//libc.a(lib_a-strlen.o)
+                              font_drawing.o (strlen)
+/opt/v810-gcc/v810/lib//libc.a(lib_a-impure.o)
+                              /opt/v810-gcc/v810/lib//libc.a(lib_a-malloc.o) (_impure_ptr)
+/opt/v810-gcc/v810/lib//libc.a(lib_a-nano-svfprintf.o)
+                              /opt/v810-gcc/v810/lib//libc.a(lib_a-sprintf.o) (_svfprintf_r)
+/opt/v810-gcc/v810/lib//libc.a(lib_a-nano-vfprintf_i.o)
+                              /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-svfprintf.o) (_printf_i)
+/opt/v810-gcc/v810/lib//libc.a(lib_a-reent.o)
+                              /opt/v810-gcc/v810/lib//libc.a(lib_a-sbrkr.o) (errno)
+/opt/v810-gcc/v810/lib//libc.a(lib_a-memchr.o)
+                              /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-svfprintf.o) (memchr)
+/opt/v810-gcc/v810/lib//libc.a(lib_a-nano-reallocr.o)
+                              /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-svfprintf.o) (_realloc_r)
+/opt/v810-gcc/v810/lib//libc.a(lib_a-nano-msizer.o)
+                              /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-reallocr.o) (_malloc_usable_size_r)
+/opt/v810-gcc/v810/lib//libsim.a(sbrk.o)
+                              /opt/v810-gcc/v810/lib//libc.a(lib_a-sbrkr.o) (sbrk)
+/opt/v810-gcc/lib/gcc/v810/4.9.4//libgcc.a(_save_fp.o)
+                              main.o (_save_r20_fp)
+/opt/v810-gcc/lib/gcc/v810/4.9.4//libgcc.a(_load_fp.o)
+                              main.o (_load_r20_fp)
+
+Allocating common symbols
+Common symbol       size              file
+
+current_piece       0x10              main.o
+grid                0x240             main.o
+face_list           0xe3d0            main.o
+samplepsg_ch        0x18              pcfx.o
+samplepsg_play      0x18              pcfx.o
+samplepsg_size      0x18              pcfx.o
+oldpad0             0x4               main.o
+mainfreq            0x4               pcfx.o
+newpad0             0x4               main.o
+original_Y          0x400             pcfx.o
+samplepsg_loop      0x18              pcfx.o
+newpad1             0x4               main.o
+previous_piece_state
+                    0x10              main.o
+oldpad1             0x4               main.o
+puzzles             0xb0              main.o
+errno               0x4               /opt/v810-gcc/v810/lib//libc.a(lib_a-reent.o)
+divTab              0x4000            common.o
+framebuffer_game    0xf000            main.o
+microprog           0x20              pcfx.o
+adjusted_pal        0x200             pcfx.o
+samplepsg_buf       0xbfff4           pcfx.o
+
+Memory Configuration
+
+Name             Origin             Length             Attributes
+*default*        0x0000000000000000 0xffffffffffffffff
+
+Linker script and memory map
+
+LOAD /opt/v810-gcc/v810/lib/crt0.o
+LOAD font_drawing.o
+LOAD pcfx.o
+LOAD common.o
+LOAD main.o
+LOAD font.o
+LOAD fastking.o
+LOAD /opt/v810-gcc/lib//liberis.a
+LOAD /opt/v810-gcc/v810/lib//libc.a
+LOAD /opt/v810-gcc/v810/lib//libsim.a
+LOAD /opt/v810-gcc/lib/gcc/v810/4.9.4//libgcc.a
+LOAD /opt/v810-gcc/v810/lib//libm.a
+                0x0000000000008000                PROVIDE (__load, 0x8000)
+                0x0000000000008000                . = __load
+
+.text           0x0000000000008000     0xa640
+ *(.text)
+ .text          0x0000000000008000       0xe8 /opt/v810-gcc/v810/lib/crt0.o
+                0x0000000000008000                start
+                0x0000000000008004                dbgbreak
+                0x0000000000008008                dbgfatal
+                0x000000000000800c                dbgstack
+                0x0000000000008010                jmp_r1
+                0x0000000000008014                _exit
+                0x000000000000801a                exit
+                0x000000000000801e                _main
+ .text          0x00000000000080e8      0x2d4 font_drawing.o
+                0x00000000000080e8                print_string
+ .text          0x00000000000083bc     0x12fc pcfx.o
+                0x00000000000083bc                my_vblank_irq
+                0x00000000000083f4                eris_king_set_bg_affine_transform
+                0x00000000000084a0                Set_Video
+                0x0000000000008764                Clear_VDC
+                0x000000000000878c                Init_Sprite
+                0x00000000000087ec                Update_Sprite
+                0x000000000000883c                Move_Sprite
+                0x0000000000008864                Upload_Palette
+                0x000000000000888c                Empty_Palette
+                0x00000000000088ac                Adjust_Palette_Brightness_YUV
+                0x00000000000088f0                fadeOutPalette
+                0x00000000000089c8                fadeInPalette
+                0x0000000000008a78                Clear_BG0
+                0x0000000000008aa8                Initialize_ADPCM
+                0x0000000000008b0c                LoadADPCMCD
+                0x0000000000008b4c                Reset_ADPCM
+                0x0000000000008bdc                Play_ADPCM
+                0x0000000000008cd8                Play_PSGSample
+                0x0000000000008d40                Load_PSGSample
+                0x0000000000008d70                Load_PSGSample_RAM
+                0x0000000000008da4                Stop_PSGSample
+                0x0000000000008dd0                increment_zda_timer_count
+                0x0000000000008de8                my_timer_irq
+                0x0000000000008e94                samplepsg_timer_irq
+                0x0000000000009220                vsync
+                0x0000000000009238                getFps
+                0x000000000000926c                getTicks
+                0x0000000000009274                initTimer
+                0x00000000000092e0                GetSeconds
+                0x00000000000092f4                Reset_ZDA
+                0x00000000000092fc                chartou32
+                0x0000000000009338                printstr
+                0x0000000000009464                print_at
+                0x00000000000094bc                putch_at
+                0x00000000000094f0                putnumber_at
+                0x00000000000095a8                cd_start_track
+                0x00000000000095fc                cd_end_track
+                0x0000000000009650                cd_pausectrl
+ .text          0x00000000000096b8       0x48 common.o
+                0x00000000000096b8                MULTIPLY
+                0x00000000000096c8                initDivs
+ .text          0x0000000000009700     0x3bd8 main.o
+                0x000000000000a764                rotateX
+                0x000000000000a7b8                rotateY
+                0x000000000000a80c                rotateZ
+                0x000000000000a860                project
+                0x000000000000a8a8                draw_current_piece
+                0x000000000000acd4                undraw_previous_piece
+                0x000000000000b320                draw_grid
+                0x000000000000b6e4                check_collision
+                0x000000000000b7b0                clear_lines
+                0x000000000000b9d0                check_almost_losing
+                0x000000000000ba4c                merge_piece
+                0x000000000000be4c                PrintText
+                0x000000000000be74                spawn_piece
+                0x000000000000beb8                initialize_puzzles
+                0x000000000000bf44                load_puzzle
+                0x000000000000c01c                spawn_piece_puzzle
+                0x000000000000c0fc                draw_title_cube
+                0x000000000000ca44                update_previous_buttons
+                0x000000000000cab0                Game_Switch
+                0x000000000000cdb4                draw_grid_partial
+                0x000000000000d234                Init_video_game
+ .text          0x000000000000d2d8      0x300 font.o
+                0x000000000000d2d8                font
+ .text          0x000000000000d5d8      0x13c fastking.o
+                0x000000000000d5d8                eris_king_set_bg0_affine_coefficient_a
+                0x000000000000d5e6                eris_king_set_bg0_affine_coefficient_b
+                0x000000000000d5f4                eris_king_set_bg0_affine_coefficient_c
+                0x000000000000d602                eris_king_set_bg0_affine_coefficient_d
+                0x000000000000d610                eris_king_set_bg_affine_center_x
+                0x000000000000d61e                eris_king_set_bg_affine_center_y
+                0x000000000000d62c                king_kram_write_buffer
+                0x000000000000d678                king_kram_write_buffer_bytes
+ *fill*         0x000000000000d714        0xc 00000000
+ .text          0x000000000000d720      0x7d0 /opt/v810-gcc/lib//liberis.a(v810.o)
+                0x000000000000d720                cache_enable
+                0x000000000000d72a                cache_disable
+                0x000000000000d734                cache_clear
+                0x000000000000d746                cache_dump
+                0x000000000000d754                cache_restore
+                0x000000000000ddb0                irq_enable
+                0x000000000000ddc2                irq_disable
+                0x000000000000ddd0                irq_restore
+                0x000000000000dde6                irq_set_level
+                0x000000000000ddfc                irq_set_mask
+                0x000000000000de02                irq_set_priority
+                0x000000000000de10                irq_set_handler
+                0x000000000000de4e                irq_get_level
+                0x000000000000de58                irq_get_mask
+                0x000000000000de5e                irq_get_priority
+                0x000000000000de6c                irq_level_enable
+                0x000000000000de80                irq_level_disable
+                0x000000000000de94                irq_set_raw_handler
+                0x000000000000debe                out32
+                0x000000000000dec4                out16
+                0x000000000000deca                out8
+                0x000000000000ded0                in32
+                0x000000000000ded6                in16
+                0x000000000000dedc                in8
+ .text          0x000000000000def0      0x274 /opt/v810-gcc/lib//liberis.a(tetsu.o)
+                0x000000000000def0                eris_tetsu_init
+                0x000000000000df5c                eris_tetsu_set_video_mode
+                0x000000000000dfb6                eris_tetsu_set_palette
+                0x000000000000dfd0                eris_tetsu_set_7up_palette
+                0x000000000000dfe6                eris_tetsu_set_king_palette
+                0x000000000000e010                eris_tetsu_set_rainbow_palette
+                0x000000000000e020                eris_tetsu_set_priorities
+                0x000000000000e05a                eris_tetsu_set_chroma_key
+                0x000000000000e094                eris_tetsu_get_raster
+                0x000000000000e0a0                eris_tetsu_get_field
+                0x000000000000e0ac                eris_tetsu_is_displaying
+                0x000000000000e0b8                eris_tetsu_set_cellophane_color
+                0x000000000000e0c6                eris_tetsu_set_cellophane_sprites
+                0x000000000000e0ee                eris_tetsu_set_cellophane_control
+                0x000000000000e130                eris_tetsu_set_cellophane_coeffs
+ .text          0x000000000000e164      0x1ac /opt/v810-gcc/lib//liberis.a(king.o)
+                0x000000000000e164                eris_king_init
+                0x000000000000e1b6                eris_king_set_kram_read
+                0x000000000000e1c8                eris_king_set_kram_write
+                0x000000000000e1da                eris_king_kram_read
+                0x000000000000e1e8                eris_king_kram_write
+                0x000000000000e1f6                eris_king_set_kram_pages
+                0x000000000000e210                eris_king_set_bg_mode
+                0x000000000000e22a                eris_king_set_bg_prio
+                0x000000000000e24c                eris_king_set_bg_size
+                0x000000000000e272                eris_king_set_bat_cg_addr
+                0x000000000000e28e                eris_king_set_scroll
+                0x000000000000e2b0                eris_king_write_microprogram
+                0x000000000000e2d4                eris_king_fill_microprogram
+                0x000000000000e2f2                eris_king_enable_microprogram
+                0x000000000000e302                eris_king_disable_microprogram
+ .text          0x000000000000e310        0x8 /opt/v810-gcc/lib//liberis.a(romfont.o)
+                0x000000000000e310                eris_romfont_get
+ .text          0x000000000000e318      0x260 /opt/v810-gcc/lib//liberis.a(std.o)
+                0x000000000000e318                memset32
+                0x000000000000e326                memset16
+                0x000000000000e334                memset8
+                0x000000000000e342                memcpy32
+                0x000000000000e356                memcpy16
+                0x000000000000e36a                memcpy8
+                0x000000000000e37c                memcmp32
+                0x000000000000e396                memcmp16
+                0x000000000000e3b0                memcmp8
+                0x000000000000e3c8                strlen32
+                0x000000000000e3da                strlen16
+                0x000000000000e3ec                strlen8
+                0x000000000000e3fe                strcpy32
+                0x000000000000e410                strcpy16
+                0x000000000000e422                strcpy8
+                0x000000000000e434                strcmp32
+                0x000000000000e44c                strcmp16
+                0x000000000000e464                strcmp8
+                0x000000000000e47c                strnlen32
+                0x000000000000e492                strnlen16
+                0x000000000000e4a8                strnlen8
+                0x000000000000e4be                strncpy32
+                0x000000000000e4da                strncpy16
+                0x000000000000e4f6                strncpy8
+                0x000000000000e512                strncmp32
+                0x000000000000e534                strncmp16
+                0x000000000000e556                strncmp8
+ .text          0x000000000000e578       0x52 /opt/v810-gcc/lib//liberis.a(timer.o)
+                0x000000000000e578                eris_timer_init
+                0x000000000000e582                eris_timer_set_period
+                0x000000000000e588                eris_timer_read_counter
+                0x000000000000e58e                eris_timer_ack_irq
+                0x000000000000e59c                eris_timer_read_control
+                0x000000000000e5a2                eris_timer_write_control
+                0x000000000000e5a8                eris_timer_start
+                0x000000000000e5bc                eris_timer_stop
+ .text          0x000000000000e5ca      0x154 /opt/v810-gcc/lib//liberis.a(cd.o)
+                0x000000000000e5ca                eris_cd_reset
+                0x000000000000e5ce                eris_cd_read
+                0x000000000000e678                eris_cd_read_kram
+ .text          0x000000000000e71e       0x7c /opt/v810-gcc/lib//liberis.a(pad.o)
+                0x000000000000e726                eris_pad_init
+                0x000000000000e740                eris_pad_read
+                0x000000000000e764                eris_pad_type
+                0x000000000000e78c                eris_pad_connected
+ .text          0x000000000000e79a      0x558 /opt/v810-gcc/lib//liberis.a(7up.o)
+                0x000000000000e7a6                eris_sup_init
+                0x000000000000e852                eris_sup_set
+                0x000000000000e860                eris_sup_show
+                0x000000000000e896                eris_sup_spr_set
+                0x000000000000e8b2                eris_sup_spr_x
+                0x000000000000e8e6                eris_sup_spr_y
+                0x000000000000e91a                eris_sup_spr_xy
+                0x000000000000e958                eris_sup_spr_pattern
+                0x000000000000e98c                eris_sup_spr_pri
+                0x000000000000e9d4                eris_sup_spr_pal
+                0x000000000000ea1c                eris_sup_spr_ctrl
+                0x000000000000ea64                eris_sup_spr_create
+                0x000000000000eab2                eris_sup_spr_get_x
+                0x000000000000eae2                eris_sup_spr_get_y
+                0x000000000000eb12                eris_sup_spr_get_pattern
+                0x000000000000eba6                eris_sup_bg_set_size
+                0x000000000000ebf0                eris_sup_bg_set_tile
+                0x000000000000ec44                eris_sup_bg_load_tiles
+                0x000000000000ec98                eris_sup_bg_scroll_x
+                0x000000000000ec9a                eris_sup_bg_scroll_y
+                0x000000000000ec9c                eris_sup_bg_scroll_xy
+                0x000000000000ec9e                eris_sup_bg_get_tile
+                0x000000000000ecee                eris_sup_bg_get_scroll_x
+ .text          0x000000000000ecf2       0x58 /opt/v810-gcc/lib//liberis.a(pad.o)
+                0x000000000000ecf2                eris_low_pad_init
+                0x000000000000ed02                eris_low_pad_read_status
+                0x000000000000ed0a                eris_low_pad_read_data
+                0x000000000000ed24                eris_low_pad_data_ready
+                0x000000000000ed3a                eris_low_pad_write_control
+                0x000000000000ed42                eris_low_pad_write_data
+ .text          0x000000000000ed4a       0x86 /opt/v810-gcc/lib//liberis.a(soundbox.o)
+                0x000000000000ed4a                eris_low_psg_set_main_volume
+                0x000000000000ed54                eris_low_psg_set_freq
+                0x000000000000ed62                eris_low_psg_set_volume
+                0x000000000000ed70                eris_low_psg_set_balance
+                0x000000000000ed7a                eris_low_psg_set_channel
+                0x000000000000ed80                eris_low_psg_waveform_data
+                0x000000000000ed86                eris_low_psg_set_noise
+                0x000000000000ed90                eris_low_psg_set_lfo_freq
+                0x000000000000ed96                eris_low_psg_set_lfo_control
+                0x000000000000eda0                eris_low_adpcm_set_control
+                0x000000000000edba                eris_low_adpcm_set_volume
+                0x000000000000edc6                eris_low_cdda_set_volume
+ .text          0x000000000000edd0      0x428 /opt/v810-gcc/lib//liberis.a(7up.o)
+                0x000000000000edd0                eris_low_sup_init
+                0x000000000000ee3e                eris_low_sup_setreg
+                0x000000000000ee4e                eris_low_sup_set_video_mode
+                0x000000000000eec2                eris_low_sup_get_video_mode
+                0x000000000000efe0                eris_low_sup_set_vram_write
+                0x000000000000eff0                eris_low_sup_vram_write
+                0x000000000000f004                eris_low_sup_set_vram_read
+                0x000000000000f018                eris_low_sup_vram_read
+                0x000000000000f02c                eris_low_sup_set_control
+                0x000000000000f054                eris_low_sup_get_control
+                0x000000000000f08a                eris_low_sup_set_interrupts
+                0x000000000000f0b8                eris_low_sup_set_interrupt_raster
+                0x000000000000f0cc                eris_low_sup_set_scroll
+                0x000000000000f0f0                eris_low_sup_get_scroll
+                0x000000000000f11c                eris_low_sup_do_dma
+                0x000000000000f150                eris_low_sup_setup_dma
+                0x000000000000f17c                eris_low_sup_set_satb_address
+                0x000000000000f190                eris_low_sup_set_access_width
+                0x000000000000f1b4                eris_low_sup_get_access_width
+ .text          0x000000000000f1f8      0x412 /opt/v810-gcc/lib//liberis.a(scsi.o)
+                0x000000000000f1f8                eris_low_scsi_get_phase
+                0x000000000000f262                eris_low_scsi_status
+                0x000000000000f2ea                eris_low_scsi_reset
+                0x000000000000f30a                eris_low_scsi_data_in
+                0x000000000000f368                eris_low_scsi_data_out
+                0x000000000000f3ce                eris_low_scsi_begin_dma
+                0x000000000000f410                eris_low_scsi_check_dma
+                0x000000000000f430                eris_low_scsi_finish_dma
+                0x000000000000f44a                eris_low_scsi_abort
+                0x000000000000f490                eris_low_scsi_command
+                0x000000000000f5d0                eris_low_scsi_eat_data_in
+ *fill*         0x000000000000f60a        0x2 00000000
+ .text          0x000000000000f60c       0x38 /opt/v810-gcc/v810/lib//libc.a(lib_a-malloc.o)
+                0x000000000000f60c                malloc
+                0x000000000000f628                free
+ .text          0x000000000000f644       0x5a /opt/v810-gcc/v810/lib//libc.a(lib_a-memcpy.o)
+                0x000000000000f644                memcpy
+ .text          0x000000000000f69e       0x26 /opt/v810-gcc/v810/lib//libc.a(lib_a-memmove.o)
+                0x000000000000f69e                memmove
+ .text          0x000000000000f6c4       0x1c /opt/v810-gcc/v810/lib//libc.a(lib_a-memset.o)
+                0x000000000000f6c4                memset
+ .text          0x000000000000f6e0       0xd0 /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-freer.o)
+                0x000000000000f6e0                _free_r
+ .text          0x000000000000f7b0      0x11c /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-mallocr.o)
+                0x000000000000f7b0                _malloc_r
+ .text          0x000000000000f8cc       0x50 /opt/v810-gcc/v810/lib//libc.a(lib_a-sbrkr.o)
+                0x000000000000f8cc                _sbrk_r
+ .text          0x000000000000f91c       0xa8 /opt/v810-gcc/v810/lib//libc.a(lib_a-sprintf.o)
+                0x000000000000f91c                _siprintf_r
+                0x000000000000f91c                _sprintf_r
+                0x000000000000f96c                sprintf
+                0x000000000000f96c                siprintf
+ .text          0x000000000000f9c4       0x1c /opt/v810-gcc/v810/lib//libc.a(lib_a-strlen.o)
+                0x000000000000f9c4                strlen
+ .text          0x000000000000f9e0        0x0 /opt/v810-gcc/v810/lib//libc.a(lib_a-impure.o)
+ .text          0x000000000000f9e0      0x5b8 /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-svfprintf.o)
+                0x000000000000f9e0                __ssputs_r
+                0x000000000000fb34                __ssprint_r
+                0x000000000000fcbc                _svfiprintf_r
+                0x000000000000fcbc                _svfprintf_r
+ .text          0x000000000000ff98      0x5dc /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-vfprintf_i.o)
+                0x000000000000ff98                _printf_common
+                0x0000000000010140                _printf_i
+ .text          0x0000000000010574      0x178 /opt/v810-gcc/v810/lib//libc.a(lib_a-reent.o)
+                0x0000000000010574                cleanup_glue
+                0x00000000000105ac                _reclaim_reent
+ .text          0x00000000000106ec       0x38 /opt/v810-gcc/v810/lib//libc.a(lib_a-memchr.o)
+                0x00000000000106ec                memchr
+ .text          0x0000000000010724       0x84 /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-reallocr.o)
+                0x0000000000010724                _realloc_r
+ .text          0x00000000000107a8       0x18 /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-msizer.o)
+                0x00000000000107a8                _malloc_usable_size_r
+ .text          0x00000000000107c0       0x30 /opt/v810-gcc/v810/lib//libsim.a(sbrk.o)
+                0x00000000000107c0                sbrk
+ .text          0x00000000000107f0       0x70 /opt/v810-gcc/lib/gcc/v810/4.9.4//libgcc.a(_save_fp.o)
+                0x00000000000107f0                _save_r20_fp
+                0x00000000000107f6                _save_r21_fp
+                0x00000000000107fc                _save_r22_fp
+                0x0000000000010802                _save_r23_fp
+                0x0000000000010808                _save_r24_fp
+                0x000000000001080e                _save_r25_fp
+                0x0000000000010814                _save_r26_fp
+                0x000000000001081a                _save_r27_fp
+                0x0000000000010820                _save_r28_fp
+                0x0000000000010824                _save_r29_fp
+                0x0000000000010828                _save_r31_fp
+                0x000000000001082c                _push_r20_fp
+                0x0000000000010830                _push_r21_fp
+                0x0000000000010834                _push_r22_fp
+                0x0000000000010838                _push_r23_fp
+                0x000000000001083c                _push_r24_fp
+                0x0000000000010840                _push_r25_fp
+                0x0000000000010844                _push_r26_fp
+                0x0000000000010848                _push_r27_fp
+                0x000000000001084c                _push_r28_fp
+                0x0000000000010850                _push_r29_fp
+                0x0000000000010854                _push_r31_fp
+ .text          0x0000000000010860       0x78 /opt/v810-gcc/lib/gcc/v810/4.9.4//libgcc.a(_load_fp.o)
+                0x0000000000010860                _load_r20_fp
+                0x0000000000010866                _load_r21_fp
+                0x000000000001086c                _load_r22_fp
+                0x0000000000010872                _load_r23_fp
+                0x0000000000010878                _load_r24_fp
+                0x000000000001087e                _load_r25_fp
+                0x0000000000010884                _load_r26_fp
+                0x000000000001088a                _load_r27_fp
+                0x0000000000010890                _load_r28_fp
+                0x0000000000010896                _load_r29_fp
+                0x000000000001089c                _load_r31_fp
+                0x00000000000108a4                _pop_r20_fp
+                0x00000000000108a8                _pop_r21_fp
+                0x00000000000108ac                _pop_r22_fp
+                0x00000000000108b0                _pop_r23_fp
+                0x00000000000108b4                _pop_r24_fp
+                0x00000000000108b8                _pop_r25_fp
+                0x00000000000108bc                _pop_r26_fp
+                0x00000000000108c0                _pop_r27_fp
+                0x00000000000108c4                _pop_r28_fp
+                0x00000000000108c8                _pop_r29_fp
+                0x00000000000108cc                _pop_r31_fp
+ *(.text.*)
+ .text.startup  0x00000000000108d8     0x1d68 main.o
+                0x00000000000108d8                main
+ *(.gnu.warning)
+ *(.gnu.linkonce.t*)
+                0x0000000000012640                __etext = .
+
+.init
+ *(.init)
+
+.fini
+ *(.fini)
+
+.rodata         0x0000000000012640    0x330c8
+ *(.rodata)
+ .rodata        0x0000000000012640        0xc pcfx.o
+ .rodata        0x000000000001264c     0x1000 common.o
+                0x000000000001264c                initial_grids
+                0x0000000000012f4c                puzzle_pieces
+ .rodata        0x000000000001364c    0x31ff2 main.o
+                0x000000000001377a                bg_title
+                0x000000000002277a                texture
+                0x000000000002437a                bg_game
+                0x000000000003337a                gamepal
+                0x000000000003357a                ready_sfx
+                0x000000000003860a                explosion_sfx
+                0x00000000000397fb                select_sfx
+                0x0000000000039cb3                drop_sfx
+                0x000000000003b3be                go_sfx
+ *fill*         0x000000000004563e        0x2 
+ .rodata        0x0000000000045640        0x8 /opt/v810-gcc/v810/lib//libc.a(lib_a-impure.o)
+                0x0000000000045640                _global_impure_ptr
+ .rodata        0x0000000000045648       0x11 /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-svfprintf.o)
+ .rodata        0x0000000000045659       0x22 /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-vfprintf_i.o)
+ *(.rodata.*)
+ *fill*         0x000000000004567b        0x1 
+ .rodata.cst4   0x000000000004567c       0x8c main.o
+ *(.gnu.linkonce.r*)
+
+.rodata1
+ *(.rodata1)
+
+.data           0x0000000000045708     0x13a4
+ *(.data)
+ .data          0x0000000000045708        0x0 /opt/v810-gcc/v810/lib/crt0.o
+ .data          0x0000000000045708      0x400 font_drawing.o
+ .data          0x0000000000045b08      0xb40 pcfx.o
+                0x0000000000045b08                sinLUT
+                0x00000000000460a8                cosLUT
+ .data          0x0000000000046648        0x0 common.o
+ .data          0x0000000000046648      0x400 main.o
+                0x0000000000046648                cos_lookup
+                0x0000000000046848                sin_lookup
+ .data          0x0000000000046a48        0x0 font.o
+ .data          0x0000000000046a48        0x0 fastking.o
+ .data          0x0000000000046a48        0x0 /opt/v810-gcc/lib//liberis.a(v810.o)
+ .data          0x0000000000046a48        0x0 /opt/v810-gcc/lib//liberis.a(tetsu.o)
+ .data          0x0000000000046a48        0x0 /opt/v810-gcc/lib//liberis.a(king.o)
+ .data          0x0000000000046a48        0x0 /opt/v810-gcc/lib//liberis.a(romfont.o)
+ .data          0x0000000000046a48        0x0 /opt/v810-gcc/lib//liberis.a(std.o)
+ .data          0x0000000000046a48        0x0 /opt/v810-gcc/lib//liberis.a(timer.o)
+ .data          0x0000000000046a48        0x0 /opt/v810-gcc/lib//liberis.a(cd.o)
+ .data          0x0000000000046a48        0x0 /opt/v810-gcc/lib//liberis.a(pad.o)
+ .data          0x0000000000046a48        0x0 /opt/v810-gcc/lib//liberis.a(7up.o)
+ .data          0x0000000000046a48        0x0 /opt/v810-gcc/lib//liberis.a(pad.o)
+ .data          0x0000000000046a48        0x0 /opt/v810-gcc/lib//liberis.a(soundbox.o)
+ .data          0x0000000000046a48        0x0 /opt/v810-gcc/lib//liberis.a(7up.o)
+ .data          0x0000000000046a48        0x0 /opt/v810-gcc/lib//liberis.a(scsi.o)
+ .data          0x0000000000046a48        0x0 /opt/v810-gcc/v810/lib//libc.a(lib_a-malloc.o)
+ .data          0x0000000000046a48        0x0 /opt/v810-gcc/v810/lib//libc.a(lib_a-memcpy.o)
+ .data          0x0000000000046a48        0x0 /opt/v810-gcc/v810/lib//libc.a(lib_a-memmove.o)
+ .data          0x0000000000046a48        0x0 /opt/v810-gcc/v810/lib//libc.a(lib_a-memset.o)
+ .data          0x0000000000046a48        0x0 /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-freer.o)
+ .data          0x0000000000046a48        0x0 /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-mallocr.o)
+ .data          0x0000000000046a48        0x0 /opt/v810-gcc/v810/lib//libc.a(lib_a-sbrkr.o)
+ .data          0x0000000000046a48        0x0 /opt/v810-gcc/v810/lib//libc.a(lib_a-sprintf.o)
+ .data          0x0000000000046a48        0x0 /opt/v810-gcc/v810/lib//libc.a(lib_a-strlen.o)
+ .data          0x0000000000046a48       0x64 /opt/v810-gcc/v810/lib//libc.a(lib_a-impure.o)
+                0x0000000000046a48                _impure_ptr
+ .data          0x0000000000046aac        0x0 /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-svfprintf.o)
+ .data          0x0000000000046aac        0x0 /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-vfprintf_i.o)
+ .data          0x0000000000046aac        0x0 /opt/v810-gcc/v810/lib//libc.a(lib_a-reent.o)
+ .data          0x0000000000046aac        0x0 /opt/v810-gcc/v810/lib//libc.a(lib_a-memchr.o)
+ .data          0x0000000000046aac        0x0 /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-reallocr.o)
+ .data          0x0000000000046aac        0x0 /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-msizer.o)
+ .data          0x0000000000046aac        0x0 /opt/v810-gcc/v810/lib//libsim.a(sbrk.o)
+ .data          0x0000000000046aac        0x0 /opt/v810-gcc/lib/gcc/v810/4.9.4//libgcc.a(_save_fp.o)
+ .data          0x0000000000046aac        0x0 /opt/v810-gcc/lib/gcc/v810/4.9.4//libgcc.a(_load_fp.o)
+ *(.data.*)
+ *(.gnu.linkonce.d*)
+
+.data1
+ *(.data1)
+
+.ctors          0x0000000000046aac        0x0
+                0x0000000000046aac                ___ctors = .
+ *(EXCLUDE_FILE(*crtend.o) .ctors)
+ *(SORT(.ctors.*))
+ *crtend(.ctors)
+                0x0000000000046aac                ___ctors_end = .
+
+/DISCARD/
+ *(.dtors)
+ *(.dtors.*)
+ *(.gcc_except_table)
+
+.tdata          0x0000000000046ab0        0x0
+                0x0000000000046ab0                __tp = .
+ *(.tbyte)
+ *(.tcommon_byte)
+ *(.tdata)
+ *(.tbss)
+ *(.tcommon)
+                0x0000000000046ab0                . = ALIGN (0x8)
+                0x0000000000046ab0                __tpend = .
+
+.sdata          0x0000000000046ab0       0x6c
+                0x000000000004eab0                PROVIDE (__gp, (. + 0x8000))
+                0x0000000000000054                . = 0x54
+ *fill*         0x0000000000046ab0       0x54 
+ *(.sdata)
+ .sdata         0x0000000000046b04        0x4 pcfx.o
+                0x0000000000046b04                currentvid
+ .sdata         0x0000000000046b08       0x14 main.o
+                0x0000000000046b08                title_cube_min_position
+                0x0000000000046b0c                title_cube_max_position
+                0x0000000000046b10                title_cube_move_speed
+                0x0000000000046b14                title_cube_move_direction
+                0x0000000000046b18                drop_interval
+
+.rosdata        0x0000000000046b1c      0x1b4
+ *(.rosdata)
+ .rosdata       0x0000000000046b1c       0x10 pcfx.o
+                0x0000000000046b28                MEM_6270A_SR
+ .rosdata       0x0000000000046b2c      0x180 common.o
+                0x0000000000046b2c                cube_vertices_template
+                0x0000000000046b8c                cube_faces_template
+                0x0000000000046bec                cube_texcoords_template
+ .rosdata       0x0000000000046cac       0x24 main.o
+                0x0000000000046cac                bg_title_length
+                0x0000000000046cb0                texture_length
+                0x0000000000046cb4                bg_game_length
+                0x0000000000046cb8                gamepal_length
+                0x0000000000046cbc                ready_sfx_length
+                0x0000000000046cc0                explosion_sfx_length
+                0x0000000000046cc4                select_sfx_length
+                0x0000000000046cc8                drop_sfx_length
+                0x0000000000046ccc                go_sfx_length
+                0x0000000000046cd0                . = ALIGN (0x8)
+                0x0000000000046cd0                __edata = .
+
+.sbss           0x0000000000046cd0      0x240
+                0x0000000000046cd0                __sbss_start = .
+ *(.sbss)
+ .sbss          0x0000000000046cd0       0x18 pcfx.o
+                0x0000000000046cdc                nframe
+                0x0000000000046ce0                last_sda_frame_count
+                0x0000000000046ce4                sda_frame_count
+ .sbss          0x0000000000046ce8       0xc4 main.o
+                0x0000000000046cf4                cubes_to_process
+                0x0000000000046cf8                alt_state
+                0x0000000000046cfc                mus
+                0x0000000000046d00                angle_y
+                0x0000000000046d04                angle_x
+                0x0000000000046d08                z_counter
+                0x0000000000046d0c                title_cube_position_z
+                0x0000000000046d10                title_cube_position_x
+                0x0000000000046d14                title_cube_rotation_z
+                0x0000000000046d18                title_cube_rotation_y
+                0x0000000000046d1c                title_cube_rotation_x
+                0x0000000000046d20                oldpaddata
+                0x0000000000046d24                oldpadtype
+                0x0000000000046d28                paddata
+                0x0000000000046d2c                padtype
+                0x0000000000046d30                prev_select_button
+                0x0000000000046d34                prev_start_button
+                0x0000000000046d38                prev_right_button
+                0x0000000000046d3c                prev_left_button
+                0x0000000000046d40                prev_down_button
+                0x0000000000046d44                prev_up_button
+                0x0000000000046d48                prev_b_button
+                0x0000000000046d4c                prev_a_button
+                0x0000000000046d50                hold_down_button
+                0x0000000000046d54                select_button
+                0x0000000000046d58                start_button
+                0x0000000000046d5c                right_button
+                0x0000000000046d60                left_button
+                0x0000000000046d64                down_button
+                0x0000000000046d68                up_button
+                0x0000000000046d6c                b_button
+                0x0000000000046d70                a_button
+                0x0000000000046d74                puzzle_piece_index
+                0x0000000000046d78                current_puzzle_index
+                0x0000000000046d80                game_state
+                0x0000000000046d84                color
+                0x0000000000046d8c                face_count
+                0x0000000000046d90                almost_losing
+                0x0000000000046d94                clear_background_frames
+                0x0000000000046d98                game_over
+                0x0000000000046d9c                score
+                0x0000000000046da0                backtitle
+                0x0000000000046da4                force_redraw_puzzle
+                0x0000000000046da8                force_redraw
+ *(.scommon)
+ .scommon       0x0000000000046dac       0x84 pcfx.o
+                0x0000000000046dac                samplepsg_ch
+                0x0000000000046dc4                samplepsg_play
+                0x0000000000046ddc                samplepsg_size
+                0x0000000000046df4                mainfreq
+                0x0000000000046df8                samplepsg_loop
+                0x0000000000046e10                microprog
+ .scommon       0x0000000000046e30       0xe0 main.o
+                0x0000000000046e30                current_piece
+                0x0000000000046e40                oldpad0
+                0x0000000000046e44                newpad0
+                0x0000000000046e48                newpad1
+                0x0000000000046e4c                previous_piece_state
+                0x0000000000046e5c                oldpad1
+                0x0000000000046e60                puzzles
+
+.bss            0x0000000000046f10    0xe1c14
+                0x0000000000046f10                __bss_start = .
+ *(.dynbss)
+ *(.bss)
+ .bss           0x0000000000046f10        0x0 /opt/v810-gcc/v810/lib/crt0.o
+ .bss           0x0000000000046f10        0x0 font_drawing.o
+ .bss           0x0000000000046f10        0x0 pcfx.o
+ .bss           0x0000000000046f10        0x0 common.o
+ .bss           0x0000000000046f10        0x0 main.o
+ .bss           0x0000000000046f10        0x0 font.o
+ .bss           0x0000000000046f10        0x0 fastking.o
+ .bss           0x0000000000046f10        0x0 /opt/v810-gcc/lib//liberis.a(v810.o)
+ .bss           0x0000000000046f10        0x0 /opt/v810-gcc/lib//liberis.a(tetsu.o)
+ .bss           0x0000000000046f10        0x0 /opt/v810-gcc/lib//liberis.a(king.o)
+ .bss           0x0000000000046f10        0x0 /opt/v810-gcc/lib//liberis.a(romfont.o)
+ .bss           0x0000000000046f10        0x0 /opt/v810-gcc/lib//liberis.a(std.o)
+ .bss           0x0000000000046f10        0x0 /opt/v810-gcc/lib//liberis.a(timer.o)
+ .bss           0x0000000000046f10        0x0 /opt/v810-gcc/lib//liberis.a(cd.o)
+ .bss           0x0000000000046f10        0x0 /opt/v810-gcc/lib//liberis.a(pad.o)
+ .bss           0x0000000000046f10        0x0 /opt/v810-gcc/lib//liberis.a(7up.o)
+ .bss           0x0000000000046f10        0x0 /opt/v810-gcc/lib//liberis.a(pad.o)
+ .bss           0x0000000000046f10        0x0 /opt/v810-gcc/lib//liberis.a(soundbox.o)
+ .bss           0x0000000000046f10        0x0 /opt/v810-gcc/lib//liberis.a(7up.o)
+ .bss           0x0000000000046f10        0x0 /opt/v810-gcc/lib//liberis.a(scsi.o)
+ .bss           0x0000000000046f10        0x0 /opt/v810-gcc/v810/lib//libc.a(lib_a-malloc.o)
+ .bss           0x0000000000046f10        0x0 /opt/v810-gcc/v810/lib//libc.a(lib_a-memcpy.o)
+ .bss           0x0000000000046f10        0x0 /opt/v810-gcc/v810/lib//libc.a(lib_a-memmove.o)
+ .bss           0x0000000000046f10        0x0 /opt/v810-gcc/v810/lib//libc.a(lib_a-memset.o)
+ .bss           0x0000000000046f10        0x0 /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-freer.o)
+ .bss           0x0000000000046f10        0x8 /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-mallocr.o)
+                0x0000000000046f10                __malloc_sbrk_start
+                0x0000000000046f14                __malloc_free_list
+ .bss           0x0000000000046f18        0x0 /opt/v810-gcc/v810/lib//libc.a(lib_a-sbrkr.o)
+ .bss           0x0000000000046f18        0x0 /opt/v810-gcc/v810/lib//libc.a(lib_a-sprintf.o)
+ .bss           0x0000000000046f18        0x0 /opt/v810-gcc/v810/lib//libc.a(lib_a-strlen.o)
+ .bss           0x0000000000046f18        0x0 /opt/v810-gcc/v810/lib//libc.a(lib_a-impure.o)
+ .bss           0x0000000000046f18        0x0 /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-svfprintf.o)
+ .bss           0x0000000000046f18        0x0 /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-vfprintf_i.o)
+ .bss           0x0000000000046f18        0x0 /opt/v810-gcc/v810/lib//libc.a(lib_a-reent.o)
+ .bss           0x0000000000046f18        0x0 /opt/v810-gcc/v810/lib//libc.a(lib_a-memchr.o)
+ .bss           0x0000000000046f18        0x0 /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-reallocr.o)
+ .bss           0x0000000000046f18        0x0 /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-msizer.o)
+ .bss           0x0000000000046f18        0x4 /opt/v810-gcc/v810/lib//libsim.a(sbrk.o)
+ .bss           0x0000000000046f1c        0x0 /opt/v810-gcc/lib/gcc/v810/4.9.4//libgcc.a(_save_fp.o)
+ .bss           0x0000000000046f1c        0x0 /opt/v810-gcc/lib/gcc/v810/4.9.4//libgcc.a(_load_fp.o)
+ *(COMMON)
+ COMMON         0x0000000000046f1c    0xc05f4 pcfx.o
+                0x0000000000046f1c                original_Y
+                0x000000000004731c                adjusted_pal
+                0x000000000004751c                samplepsg_buf
+ COMMON         0x0000000000107510     0x4000 common.o
+                0x0000000000107510                divTab
+ COMMON         0x000000000010b510    0x1d610 main.o
+                0x000000000010b510                grid
+                0x000000000010b750                face_list
+                0x0000000000119b20                framebuffer_game
+ COMMON         0x0000000000128b20        0x4 /opt/v810-gcc/v810/lib//libc.a(lib_a-reent.o)
+                0x0000000000128b20                errno
+                0x0000000000128b30                . = ALIGN (0x10)
+                0x0000000000128b30                __end = .
+                0x0000000000128b30                . = (. + DEFINED (__stack_size)?__stack_size:0x0)
+                0x0000000000128b30                . = ALIGN (0x10)
+                0x0000000000128b30                PROVIDE (_heap_start, .)
+                [!provide]                        PROVIDE (_heap_end, DEFINED (__stack_size)?0x200000:0x0)
+                0x0000000000000000                PROVIDE (__zdadata, 0x0)
+                0x0000000000000000                . = __zdadata
+
+.zdata          0x0000000000000000        0x0 load address 0x0000000000046cd0
+ *(.rozdata)
+ *(.zdata)
+                0x0000000000000000                . = ALIGN (0x8)
+                0x0000000000000000                PROVIDE (__zdabss, .)
+
+.zbss           0x0000000000000000        0x8
+ *(.zbss)
+ .zbss          0x0000000000000000        0x8 pcfx.o
+                0x0000000000000000                frame_text
+                0x0000000000000004                zda_timer_count
+ *(.zcommon)
+                0x0000000000000008                . = ALIGN (0x8)
+                0x0000000000000008                PROVIDE (__zdaend, .)
+                0x0000000000007c00                PROVIDE (__zdalimit, 0x7c00)
+                0x0000000000200000                PROVIDE (__stack, DEFINED (__stack_size)?_heap_start:0x200000)
+                0x0000000000200000                . = __stack
+
+.stack
+ *(.stack)
+
+.stab           0x0000000000000000     0x4a28
+ *(.stab)
+ .stab          0x0000000000000000      0x558 /opt/v810-gcc/v810/lib//libc.a(lib_a-malloc.o)
+ .stab          0x0000000000000558      0x1ec /opt/v810-gcc/v810/lib//libc.a(lib_a-memset.o)
+                                        0x48c (size before relaxing)
+ .stab          0x0000000000000744      0x684 /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-freer.o)
+                                        0x918 (size before relaxing)
+ .stab          0x0000000000000dc8      0x438 /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-mallocr.o)
+                                        0x918 (size before relaxing)
+ .stab          0x0000000000001200      0x270 /opt/v810-gcc/v810/lib//libc.a(lib_a-sbrkr.o)
+                                        0x6c0 (size before relaxing)
+ .stab          0x0000000000001470      0x3e4 /opt/v810-gcc/v810/lib//libc.a(lib_a-sprintf.o)
+                                        0x8e8 (size before relaxing)
+ .stab          0x0000000000001854      0x1d4 /opt/v810-gcc/v810/lib//libc.a(lib_a-strlen.o)
+                                        0x480 (size before relaxing)
+ .stab          0x0000000000001a28      0x174 /opt/v810-gcc/v810/lib//libc.a(lib_a-impure.o)
+                                        0x450 (size before relaxing)
+ .stab          0x0000000000001b9c     0x117c /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-svfprintf.o)
+                                       0x16b0 (size before relaxing)
+ .stab          0x0000000000002d18      0xcc0 /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-vfprintf_i.o)
+                                       0x1500 (size before relaxing)
+ .stab          0x00000000000039d8      0x42c /opt/v810-gcc/v810/lib//libc.a(lib_a-reent.o)
+                                        0x714 (size before relaxing)
+ .stab          0x0000000000003e04      0x234 /opt/v810-gcc/v810/lib//libc.a(lib_a-memchr.o)
+                                        0x4e0 (size before relaxing)
+ .stab          0x0000000000004038      0x2c4 /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-reallocr.o)
+                                        0x7a4 (size before relaxing)
+ .stab          0x00000000000042fc      0x270 /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-msizer.o)
+                                        0x750 (size before relaxing)
+ .stab          0x000000000000456c      0x4bc /opt/v810-gcc/v810/lib//libsim.a(sbrk.o)
+                                        0x6d8 (size before relaxing)
+
+.stabstr        0x0000000000000000     0x4bd8
+ *(.stabstr)
+ .stabstr       0x0000000000000000     0x4bd8 /opt/v810-gcc/v810/lib//libc.a(lib_a-malloc.o)
+
+.stab.excl
+ *(.stab.excl)
+
+.stab.exclstr
+ *(.stab.exclstr)
+
+.stab.index
+ *(.stab.index)
+
+.stab.indexstr
+ *(.stab.indexstr)
+
+.comment        0x0000000000000000       0x11
+ *(.comment)
+ .comment       0x0000000000000000       0x11 font_drawing.o
+                                         0x12 (size before relaxing)
+ .comment       0x0000000000000011       0x12 pcfx.o
+ .comment       0x0000000000000011       0x12 common.o
+ .comment       0x0000000000000011       0x12 main.o
+ .comment       0x0000000000000011       0x12 /opt/v810-gcc/v810/lib//libc.a(lib_a-malloc.o)
+ .comment       0x0000000000000011       0x12 /opt/v810-gcc/v810/lib//libc.a(lib_a-memset.o)
+ .comment       0x0000000000000011       0x12 /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-freer.o)
+ .comment       0x0000000000000011       0x12 /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-mallocr.o)
+ .comment       0x0000000000000011       0x12 /opt/v810-gcc/v810/lib//libc.a(lib_a-sbrkr.o)
+ .comment       0x0000000000000011       0x12 /opt/v810-gcc/v810/lib//libc.a(lib_a-sprintf.o)
+ .comment       0x0000000000000011       0x12 /opt/v810-gcc/v810/lib//libc.a(lib_a-strlen.o)
+ .comment       0x0000000000000011       0x12 /opt/v810-gcc/v810/lib//libc.a(lib_a-impure.o)
+ .comment       0x0000000000000011       0x12 /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-svfprintf.o)
+ .comment       0x0000000000000011       0x12 /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-vfprintf_i.o)
+ .comment       0x0000000000000011       0x12 /opt/v810-gcc/v810/lib//libc.a(lib_a-reent.o)
+ .comment       0x0000000000000011       0x12 /opt/v810-gcc/v810/lib//libc.a(lib_a-memchr.o)
+ .comment       0x0000000000000011       0x12 /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-reallocr.o)
+ .comment       0x0000000000000011       0x12 /opt/v810-gcc/v810/lib//libc.a(lib_a-nano-msizer.o)
+ .comment       0x0000000000000011       0x12 /opt/v810-gcc/v810/lib//libsim.a(sbrk.o)
+
+.debug
+ *(.debug)
+
+.line
+ *(.line)
+
+.debug_srcinfo
+ *(.debug_srcinfo)
+
+.debug_sfnames
+ *(.debug_sfnames)
+
+.debug_aranges
+ *(.debug_aranges)
+
+.debug_pubnames
+ *(.debug_pubnames)
+
+.debug_info
+ *(.debug_info)
+ *(.gnu.linkonce.wi.*)
+
+.debug_abbrev
+ *(.debug_abbrev)
+
+.debug_line
+ *(.debug_line)
+
+.debug_frame
+ *(.debug_frame)
+
+.debug_str
+ *(.debug_str)
+
+.debug_loc
+ *(.debug_loc)
+
+.debug_macinfo
+ *(.debug_macinfo)
+
+.debug_weaknames
+ *(.debug_weaknames)
+
+.debug_funcnames
+ *(.debug_funcnames)
+
+.debug_typenames
+ *(.debug_typenames)
+
+.debug_varnames
+ *(.debug_varnames)
+
+.debug_pubtypes
+ *(.debug_pubtypes)
+
+.debug_ranges
+ *(.debug_ranges)
+
+.debug_macro
+ *(.debug_macro)
+OUTPUT(mytest.elf elf32-v810)

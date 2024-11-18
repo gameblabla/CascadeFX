@@ -120,7 +120,7 @@ SDL_Surface* texture_surface;
 #include "loopy.h"
 #include "casloopy.h"
 
-#include "gamepal.h"
+
 #include "bg.h"
 #include "textures.h"
 #include "title.h"
@@ -618,7 +618,7 @@ void undraw_previous_piece() {
         }
     }
     
-#if PLATFORM == NECPCFX
+#if PLATFORM == NECPCFX || PLATFORM == CASLOOPY
     min_x-= 1;
 #endif
     
@@ -773,7 +773,7 @@ void merge_piece() {
     clear_lines();
 }
 
-uint8_t color = 0;
+int32_t color = 0;
 
 // Function to draw text
 void PrintText(const char* str, int x, int y) 
@@ -1170,11 +1170,14 @@ void Game_Switch(int state)
 			cd_end_track(3,CDDA_LOOP);
 			eris_low_cdda_set_volume(63,63);
 #endif
+
+#elif PLATFORM == CASLOOPY
+			PlayMusic(0);
 #endif
 			my_memcpy32(GAME_FRAMEBUFFER, bg_title, SCREEN_WIDTH * SCREEN_HEIGHT);
 			REFRESH_SCREEN(0, SCREEN_WIDTH * SCREEN_HEIGHT);
 
-			fadeInPalette(gamepal, 256);
+			fadeInPalette(gamepal);
 		break;
 		case GAME_STATE_MENU:
 			my_memcpy32(GAME_FRAMEBUFFER, bg_title, SCREEN_WIDTH * SCREEN_HEIGHT);
@@ -1184,7 +1187,7 @@ void Game_Switch(int state)
 			PrintText("Select Mode", SCREEN_WIDTH_HALF - 50, 160);
 		break;
 		case GAME_STATE_ARCADE:
-			fadeOutPalette(gamepal, 256);
+			fadeOutPalette(gamepal);
 			PLAY_SFX(0, READY_SFX);
 			
 #if PLATFORM == NECPCFX
@@ -1212,11 +1215,14 @@ void Game_Switch(int state)
 			}
 			eris_low_cdda_set_volume(63/2,63/2);
 #endif
+
+#elif PLATFORM == CASLOOPY
+			PlayMusic(1);
 #endif // NECPCFX
 			
 			my_memcpy32(GAME_FRAMEBUFFER, bg_game, SCREEN_WIDTH * SCREEN_HEIGHT);
 			REFRESH_SCREEN(0, SCREEN_WIDTH*SCREEN_HEIGHT);
-			fadeInPalette(gamepal, 256);
+			fadeInPalette(gamepal);
 
 
 			drop_interval = DEFAULT_INTERVAL;
@@ -1235,15 +1241,17 @@ void Game_Switch(int state)
 		break;
 		case GAME_STATE_PUZZLE:
 
-			fadeOutPalette(gamepal, 256);
+			fadeOutPalette(gamepal);
 #if PLATFORM == NECPCFX
 			eris_low_cdda_set_volume(63/2,63/2);
 			cd_start_track(4);
 			cd_end_track(5,CDDA_LOOP);
+#elif PLATFORM == CASLOOPY
+			PlayMusic(1);
 #endif
 			my_memcpy32(GAME_FRAMEBUFFER, bg_game, SCREEN_WIDTH * SCREEN_HEIGHT);
 			REFRESH_SCREEN(0, SCREEN_WIDTH * SCREEN_HEIGHT);
-			fadeInPalette(gamepal, 256);
+			fadeInPalette(gamepal);
 
 			drop_interval = DEFAULT_INTERVAL;
 			
@@ -1263,6 +1271,8 @@ void Game_Switch(int state)
 			PLAY_SFX(0, GO_SFX);
 #if PLATFORM == NECPCFX
 			eris_low_cdda_set_volume(0,0);
+#elif PLATFORM == CASLOOPY
+			PlayMusic(2);
 #endif
 			memset(GAME_FRAMEBUFFER, 0, SCREEN_WIDTH * SCREEN_HEIGHT);
 		break;
@@ -1270,6 +1280,8 @@ void Game_Switch(int state)
 			PLAY_SFX(0, GO_SFX);
 #if PLATFORM == NECPCFX
 			eris_low_cdda_set_volume(0,0);
+#elif PLATFORM == CASLOOPY
+			PlayMusic(2);
 #endif
 			memset(GAME_FRAMEBUFFER, 0, SCREEN_WIDTH * SCREEN_HEIGHT);
 		break;
@@ -1373,7 +1385,7 @@ int Init_video_game()
 	eris_low_cdda_set_volume(63,63);
 	
 	Set_Video(KING_BGMODE_256_PAL);
-	Upload_Palette(gamepal, 256);
+	Upload_Palette(gamepal);
 #ifdef DEBUGFPS
 	initTimer(0, 1423);
 #else
@@ -1389,48 +1401,9 @@ int Init_video_game()
 	
 	cd_pausectrl(0);
 #elif PLATFORM == CASLOOPY
+	Init_Video_Game();
 
-	maskInterrupts(0) ;
 	
-	// 0b00010000 for 256x224
-	VDP_MODE = 0b00010010;
-	
-    //Screen display mode
-    VDP_DISPMODE = 0x00;
-
-    //Set bitmap render mode to 4bit 512x512
-    //0x0 sets bitmap render mode to 8bit 256x256, along with a second 256x bitmap underneath.
-    // 0x1 sets bitmap to 8bit 256x512
-    VDP_BM_CTRL = 0x0001;
-
-    //Backdrop A/B refers to the "screen buffer"
-    //Backdrop refers to solid fill color for each.
-    VDP_BACKDROP_A = color(0,0,0);
-    VDP_BACKDROP_B = color(0,0,31);
-    
-    //Color PRIO enables/disables the A/B screens
-    VDP_COLORPRIO = 0b01000000;
-
-    // Which bg/obj/bm layers to show
-    VDP_LAYER_CTRL = 0b1010101001000110;
-    VDP_OBJ_CTRL = 0b000000100000000;
-    VDP_BG_CTRL = 0b0000000000001111;
-	
-	//These establish the bitmaps to cover the screen so that I can just blit the to the screen how I want adjust if you're using smaller bitmaps
-	//Set X/Y Screen of the bitmap sprite
-	VDP_BMn_SCREENX[0] = 0;
-	VDP_BMn_SCREENY[0] = 0;
-	
-	VDP_BMn_SCROLLY[0] = 0;
-
-	//Width/Height of bitmap sprite
-	VDP_BMn_WIDTH[0] = 255;
-	VDP_BMn_HEIGHT[0] = 511;
-
-	for(unsigned int i = 0; i < 256; i++){
-		VDP_PALETTE[i] = gamepal[i];
-	}
-
 #else
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         fprintf(stderr, "SDL could not initialize! SDL_Error: %s\n", SDL_GetError());

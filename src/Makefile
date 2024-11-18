@@ -6,7 +6,7 @@
 # Memory sizes; should use K/M suffix or decimal integer
 # Cart battery-backed save RAM, most have at least 8K if any
 # "Floopy Drive" flash cart has 128K
-SRAMSIZE = 0K
+SRAMSIZE = 8K
 # Allocated stack size, increase if necessary
 STACKSIZE = 1K
 
@@ -34,7 +34,7 @@ OBJDIR = ./obj
 ROM    = ./rom.bin
 
 # Basic compile options
-OPTIMIZE = -Ofast -flto -Wvla
+OPTIMIZE = -O2 -flto -Wvla
 LIBS =
 
 # Below here probably doesn't need to be touched

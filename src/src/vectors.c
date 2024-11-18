@@ -1,4 +1,5 @@
 #include "serial.h"
+#include <stdint.h>
 
 /*
 All vector functions MUST be declared with __attribute__((interrupt_handler)) to
@@ -16,6 +17,7 @@ __attribute__((interrupt_handler))
 __attribute__((section(".smallfunc")))
 void halt(void) { while(1); }
 #define RESERVED halt
+
 
 // Vector table laid out according to SH7021 datasheet tables 4.2, 5.3.
 __attribute__((section (".vectors"), used))
@@ -70,13 +72,13 @@ void (* const vector_table[])(void) = {
     doNothing, RESERVED,
     doNothing, RESERVED,
     // ITU0..ITU4 (IMIA, IMIB, OVI, Reserved)
-    doNothing, doNothing, doNothing, RESERVED,
+    ((const void (*)(void))0x648C), doNothing, doNothing, RESERVED,
     doNothing, doNothing, doNothing, RESERVED,
     doNothing, doNothing, doNothing, RESERVED,
     doNothing, doNothing, doNothing, RESERVED,
     doNothing, doNothing, doNothing, RESERVED,
     // SCI0..SCI1 (ERI, RxI, TxI, TEI)
-    doNothing, doNothing, doNothing, doNothing,
+    serial_ERI0, serial_RxI0, doNothing, doNothing,
     doNothing, doNothing, doNothing, doNothing,
     // PRT PEI
     doNothing,

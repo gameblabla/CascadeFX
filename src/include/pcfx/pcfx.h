@@ -46,7 +46,7 @@ extern void printstr(u32* str, int x, int y, int tall);
 
 extern void Clear_BG0(int bpp);
 
-extern void Upload_Palette(unsigned short pal[], int sizep);
+extern void Upload_Palette(unsigned short pal[]);
 
 extern void LoadADPCMCD(u32 lba, u32 addr, int size_sample);
 
@@ -83,9 +83,9 @@ extern void vsync(int numframes);
 extern void Empty_Palette();
 
 
-extern void fadeOutPalette(unsigned short pal[], int sizep);
+extern void fadeOutPalette(unsigned short pal[]);
 
-extern void fadeInPalette(unsigned short pal[], int sizep);
+extern void fadeInPalette(unsigned short pal[]);
 
 
 #define VDC_CHIP_0 0

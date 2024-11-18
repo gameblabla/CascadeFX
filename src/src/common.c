@@ -2,6 +2,11 @@
 #include "common.h"
 #include "defines.h"
 
+int32_t MULTIPLY(int16_t a, int16_t b) 
+{	
+    return ((int32_t)(a) * (b));
+}
+
 int divTab[DIV_TAB_SIZE];
 
 void initDivs()

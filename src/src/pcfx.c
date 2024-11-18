@@ -11,6 +11,9 @@
 #include "fastking.h"
 #include "pcfx.h"
 #include "trig_lut.h"
+
+#define PALETTE_SIZE 256
+
 int mainfreq;
 
 void Clear_BG0(int bpp);
@@ -223,10 +226,10 @@ void Move_Sprite(int chip, int x, int y)
 	eris_sup_spr_xy(x, y);
 }
 
-void Upload_Palette(unsigned short pal[], int sizep)
+void Upload_Palette(unsigned short pal[])
 {
 	int i;
-	for(i=0;i<sizep;i++)
+	for(i=0;i<PALETTE_SIZE;i++)
 	{
 		eris_tetsu_set_palette(i, pal[i]);
 	}
@@ -241,7 +244,7 @@ unsigned int original_Y[256];
 void Empty_Palette()
 {
 	int i;
-	for(i=0;i<256;i++)
+	for(i=0;i<PALETTE_SIZE;i++)
 	{
 		eris_tetsu_set_palette(i, 0x0888);
 	}
@@ -269,14 +272,14 @@ void Adjust_Palette_Brightness_YUV(unsigned short pal[], unsigned short adjusted
     }
 }
 
-void fadeOutPalette(unsigned short pal[], int sizep)
+void fadeOutPalette(unsigned short pal[])
 {
     int step;
 
     int i;
 
     // Store original Y values
-    for (i = 0; i < sizep; i++)
+    for (i = 0; i < PALETTE_SIZE; i++)
     {
         unsigned short pal_entry = pal[i];
         original_Y[i] = (pal_entry >> 8) & 0xFF; // Extract Y component
@@ -284,7 +287,7 @@ void fadeOutPalette(unsigned short pal[], int sizep)
 
     for (step = MAX_BRIGHTNESS; step >= 0; step--)
     {
-        for (i = 0; i < sizep; i++)
+        for (i = 0; i < PALETTE_SIZE; i++)
         {
             unsigned short pal_entry = pal[i];
             unsigned int U = (pal_entry >> 4) & 0x0F;   // U component
@@ -296,7 +299,7 @@ void fadeOutPalette(unsigned short pal[], int sizep)
             // Reconstruct the palette entry
             adjusted_pal[i] = (Y_adjusted << 8) | (U << 4) | V;
         }
-        Upload_Palette(adjusted_pal, sizep);
+        Upload_Palette(adjusted_pal);
         vsync(0);
     }
     
@@ -304,14 +307,14 @@ void fadeOutPalette(unsigned short pal[], int sizep)
     vsync(0);
 }
 
-void fadeInPalette(unsigned short pal[], int sizep)
+void fadeInPalette(unsigned short pal[])
 {
     int step;
 
     int i;
 
     // Store original Y values
-    for (i = 0; i < sizep; i++)
+    for (i = 0; i < PALETTE_SIZE; i++)
     {
         unsigned short pal_entry = pal[i];
         original_Y[i] = (pal_entry >> 8) & 0xFF; // Extract Y component
@@ -319,7 +322,7 @@ void fadeInPalette(unsigned short pal[], int sizep)
 
     for (step = 0; step <= MAX_BRIGHTNESS; step++)
     {
-        for (i = 0; i < sizep; i++)
+        for (i = 0; i < PALETTE_SIZE; i++)
         {
             unsigned short pal_entry = pal[i];
             unsigned int U = (pal_entry >> 4) & 0x0F;   // U component
@@ -331,7 +334,7 @@ void fadeInPalette(unsigned short pal[], int sizep)
             // Reconstruct the palette entry
             adjusted_pal[i] = (Y_adjusted << 8) | (U << 4) | V;
         }
-        Upload_Palette(adjusted_pal, sizep);
+        Upload_Palette(adjusted_pal);
         vsync(0);
     }
 }

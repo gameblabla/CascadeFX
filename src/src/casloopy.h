@@ -9,12 +9,14 @@
 #include <string.h>
 #include <stddef.h>
 
+
 #define PALETTE_SIZE 256 // Assuming a palette of 256 colors
 #define FADE_STEPS 31 // Define the number of steps for the fade effect
 
+extern void PlayMusic(int i);
+extern void Init_Video_Game();
 
 extern volatile void (*BiosVsync)(void);
-
 extern void Empty_Palette();
 
 extern void memcpy32(void *dest, const void *src, size_t n);
@@ -46,8 +48,8 @@ static inline void CopyFrameBuffer(int* source, int* destination)
 }
 
 // Function to fade in from black to pict6pal
-extern void fadeInPalette(const uint16_t* topal, int colors);
+extern void fadeInPalette( int colors);
 // Function to fade out from pict6pal to black
-extern void fadeOutPalette(const uint16_t* frompal, int colors);
+extern void fadeOutPalette(int colors);
 
 #endif

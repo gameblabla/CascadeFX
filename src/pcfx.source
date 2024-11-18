@@ -1,0 +1,2649 @@
+	.file	"pcfx.c"
+	.section .text
+	.align 2
+	.global _my_vblank_irq
+	.type	_my_vblank_irq, @function
+_my_vblank_irq:
+	add -4,sp
+	st.w r1,0[sp]
+	add -4,sp
+	st.w r10,0[sp]
+	movhi hi(-2147482624),r0,r10
+	movea lo(-2147482624),r10,r10
+	ld.h 0[r10],r10
+	andi 32,r10,r10
+	be .L1
+	ld.w sdaoff(_sda_frame_count)[gp],r10
+	add 1,r10
+	st.w r10,sdaoff(_sda_frame_count)[gp]
+.L1:
+	ld.w 0[sp],r10
+	add 4,sp
+	ld.w 0[sp],r1
+	add 4,sp
+	reti
+	.size	_my_vblank_irq, .-_my_vblank_irq
+	.align 2
+	.global _eris_king_set_bg_affine_transform
+	.type	_eris_king_set_bg_affine_transform, @function
+_eris_king_set_bg_affine_transform:
+	mov lp, r1
+	jal __save_r24_fp
+	movhi hi(_cosLUT),r0,r11
+	ld.w 32[fp],r10
+	movea lo(_cosLUT),r11,r11
+	shl 2,r10
+	movhi hi(_sinLUT),r0,r12
+	add r10,r11
+	movea lo(_sinLUT),r12,r12
+	add r12,r10
+	ld.w 0[r11],r27
+	movhi hi0(1065353216),r0,r29
+	cvt.ws r27,r27
+	ld.w 0[r10],r28
+	mov r29,r24
+	divf.s r8,r24
+	mov r24,r10
+	mulf.s r27,r10
+	divf.s r9,r29
+	mov r7,r26
+	mov r6,r25
+	cvt.sw r10,r6
+	shl 16,r6 ; sar 16,r6
+	jal _eris_king_set_bg0_affine_coefficient_a
+	cvt.ws r28,r28
+	movhi hi0(-2147483648),r0,r10
+	add r29,r10
+	mulf.s r28,r10
+	cvt.sw r10,r6
+	shl 16,r6 ; sar 16,r6
+	jal _eris_king_set_bg0_affine_coefficient_b
+	mulf.s r24,r28
+	cvt.sw r28,r6
+	shl 16,r6 ; sar 16,r6
+	jal _eris_king_set_bg0_affine_coefficient_c
+	mulf.s r27,r29
+	cvt.sw r29,r6
+	shl 16,r6 ; sar 16,r6
+	jal _eris_king_set_bg0_affine_coefficient_d
+	shl 16,r25 ; sar 16,r25
+	mov r25,r6
+	shl 24,r6
+	sar 16,r6
+	jal _eris_king_set_bg_affine_center_x
+	shl 16,r26 ; sar 16,r26
+	mov r26,r6
+	shl 24,r6
+	sar 16,r6
+	jal _eris_king_set_bg_affine_center_y
+	jr __load_r24_fp
+	.size	_eris_king_set_bg_affine_transform, .-_eris_king_set_bg_affine_transform
+	.align 2
+	.global _Set_Video
+	.type	_Set_Video, @function
+_Set_Video:
+	mov lp, r1
+	jal __save_r26_fp
+	addi -32,sp,sp
+	ld.w sdaoff(_currentvid)[gp],r10
+	mov r6,r26
+	cmp r6,r10
+	bne .+6 ; jr .L8
+	mov 1,r29
+	mov 4,r8
+	mov 3,r9
+	mov 2,r28
+	mov 5,r6
+	mov 6,r7
+	st.w r28,0[sp]
+	st.w r29,4[sp]
+	st.w r26,sdaoff(_currentvid)[gp]
+	st.w r0,8[sp]
+	jal _eris_tetsu_set_priorities
+	mov 0,r6
+	mov 0,r7
+	jal _eris_tetsu_set_7up_palette
+	mov 0,r7
+	mov 0,r8
+	mov 0,r9
+	mov 0,r6
+	jal _eris_tetsu_set_king_palette
+	mov 0,r6
+	jal _eris_tetsu_set_rainbow_palette
+	mov r29,r6
+	mov 0,r7
+	mov 0,r8
+	mov 0,r9
+	st.w r0,0[sp]
+	jal _eris_king_set_bg_prio
+	movea sdaoff(_microprog),gp,r27
+	mov r26,r6
+	mov 0,r7
+	mov 0,r8
+	mov 0,r9
+	jal _eris_king_set_bg_mode
+	mov 0,r8
+	mov 0,r9
+	mov r29,r7
+	mov 0,r6
+	jal _eris_king_set_kram_pages
+	movea 256,r0,r10
+	mov 0,r6
+	st.h r10,0[r27]
+	st.h r10,2[r27]
+	st.h r10,4[r27]
+	st.h r10,6[r27]
+	st.h r10,8[r27]
+	st.h r10,10[r27]
+	st.h r10,12[r27]
+	st.h r10,14[r27]
+	st.h r10,16[r27]
+	st.h r10,18[r27]
+	st.h r10,20[r27]
+	st.h r10,22[r27]
+	st.h r10,24[r27]
+	st.h r10,26[r27]
+	st.h r10,28[r27]
+	st.h r10,30[r27]
+	movea 136,r0,r7
+	jal _eris_tetsu_set_palette
+	mov r29,r6
+	movhi hi(57480),r0,r7
+	movea lo(57480),r7,r7
+	jal _eris_tetsu_set_palette
+	mov r28,r6
+	movea 136,r0,r7
+	mov 3,r29
+	jal _eris_tetsu_set_palette
+	movea 255,r0,r28
+.L10:
+	mov r29,r6
+	mov 0,r7
+	add 1,r29
+	jal _eris_tetsu_set_palette
+	cmp r28,r29
+	bne .L10
+	st.h r0,0[r27]
+	cmp 2,r26
+	bne .+6 ; jr .L12
+	cmp 3,r26
+	bne .+6 ; jr .L13
+	cmp 1,r26
+	be .L15
+	mov 1,r10
+	st.h r10,2[r27]
+	mov 2,r10
+	st.h r10,4[r27]
+	mov 3,r10
+	st.h r10,6[r27]
+	mov 4,r10
+	st.h r10,8[r27]
+	mov 5,r10
+	st.h r10,10[r27]
+	mov 6,r10
+	st.h r10,12[r27]
+	mov 7,r10
+	st.h r10,14[r27]
+.L15:
+	jal _eris_king_disable_microprogram
+	movea sdaoff(_microprog),gp,r6
+	mov 0,r7
+	movea 16,r0,r8
+	jal _eris_king_write_microprogram
+	jal _eris_king_enable_microprogram
+	mov 1,r29
+	mov 0,r7
+	mov r29,r6
+	mov 0,r8
+	mov 0,r9
+	st.w r29,4[sp]
+	st.w r29,8[sp]
+	st.w r29,12[sp]
+	st.w r0,0[sp]
+	st.w r0,16[sp]
+	st.w r0,20[sp]
+	st.w r0,24[sp]
+	st.w r0,28[sp]
+	jal _eris_tetsu_set_video_mode
+	mov r29,r8
+	mov 0,r6
+	mov 0,r7
+	mov 0,r9
+	jal _eris_low_sup_set_control
+	mov 0,r9
+	mov r29,r8
+	mov 0,r6
+	mov 0,r7
+	st.w r0,0[sp]
+	jal _eris_low_sup_set_access_width
+	mov 0,r6
+	mov 0,r7
+	mov 0,r8
+	jal _eris_low_sup_set_scroll
+	mov 2,r10
+	movea 31,r0,r11
+	mov r10,r7
+	mov r10,r8
+	st.w r11,0[sp]
+	st.w r10,8[sp]
+	movea 17,r0,r11
+	st.w r10,16[sp]
+	movea 239,r0,r10
+	mov 4,r9
+	st.w r11,4[sp]
+	st.w r10,12[sp]
+	mov 0,r6
+	jal _eris_low_sup_set_video_mode
+	mov 0,r7
+	mov 0,r8
+	mov 0,r6
+	jal _eris_king_set_bat_cg_addr
+	mov r29,r6
+	mov 0,r7
+	mov 0,r8
+	jal _eris_king_set_bat_cg_addr
+	mov 0,r6
+	mov 0,r7
+	mov 0,r8
+	jal _eris_king_set_scroll
+	mov 0,r6
+	mov 9,r7
+	mov 8,r8
+	mov 0,r9
+	st.w r0,0[sp]
+	jal _eris_king_set_bg_size
+	mov 0,r6
+	mov 0,r7
+	movea 2048,r0,r29
+	jal _eris_low_sup_set_vram_write
+.L16:
+	add -1,r29
+	mov 0,r6
+	movea 128,r0,r7
+	jal _eris_low_sup_vram_write
+	cmp 0,r29
+	bne .L16
+	mov 0,r6
+	movea 4608,r0,r7
+	movhi hi(_font),r0,r29
+	movhi hi(_font+768),r0,r27
+	jal _eris_low_sup_set_vram_write
+	movea lo(_font),r29,r29
+	movea lo(_font+768),r27,r27
+.L17:
+	addi 8,r29,r28
+.L18:
+	ld.b 0[r29],r10
+	andi 255,r10,r10
+	add 1,r29
+	not r10,r7
+	mov 0,r6
+	shl 8,r7
+	or r10,r7
+	andi 65535,r7,r7
+	jal _eris_low_sup_vram_write
+	cmp r29,r28
+	bne .L18
+	mov 8,r29
+.L19:
+	mov 0,r6
+	mov 0,r7
+	add -1,r29
+	jal _eris_low_sup_vram_write
+	andi 65535,r29,r29
+	bne .L19
+	mov r28,r29
+	cmp r27,r28
+	bne .L17
+	mov 0,r6
+	mov 5,r7
+	movea 136,r0,r8
+	jal _eris_low_sup_setreg
+	mov 0,r6
+	mov 1,r7
+	movhi hi(61440),r0,r29
+	jal _eris_king_set_kram_write
+	movea lo(61440),r29,r29
+.L21:
+	add -1,r29
+	mov 0,r6
+	jal _eris_king_kram_write
+	cmp 0,r29
+	bne .L21
+	mov 0,r6
+	mov 1,r7
+	jal _eris_king_set_kram_write
+.L8:
+	jr __load_r26_fp
+.L13:
+	mov 1,r10
+	st.h r26,6[r27]
+	st.h r10,2[r27]
+	mov 2,r10
+	st.h r10,4[r27]
+	jr .L15
+.L12:
+	mov 1,r10
+	st.h r10,2[r27]
+	jr .L15
+	.size	_Set_Video, .-_Set_Video
+	.align 2
+	.global _Clear_VDC
+	.type	_Clear_VDC, @function
+_Clear_VDC:
+	mov lp, r1
+	jal __save_r28_fp
+	mov 0,r7
+	mov r6,r28
+	movea 2048,r0,r29
+	jal _eris_low_sup_set_vram_write
+.L28:
+	add -1,r29
+	mov r28,r6
+	movea 128,r0,r7
+	jal _eris_low_sup_vram_write
+	cmp 0,r29
+	bne .L28
+	jr __load_r28_fp
+	.size	_Clear_VDC, .-_Clear_VDC
+	.align 2
+	.global _Init_Sprite
+	.type	_Init_Sprite, @function
+_Init_Sprite:
+	mov lp, r1
+	jal __save_r29_fp
+	addi -20,sp,sp
+	mov 0,r7
+	mov r6,r29
+	mov 0,r8
+	mov 1,r9
+	jal _eris_low_sup_set_control
+	mov 0,r9
+	mov 0,r6
+	mov 0,r7
+	mov 0,r8
+	st.w r0,0[sp]
+	jal _eris_low_sup_set_access_width
+	mov 0,r6
+	mov 0,r7
+	mov 0,r8
+	jal _eris_low_sup_set_scroll
+	movea 31,r0,r10
+	st.w r10,0[sp]
+	movea 17,r0,r10
+	st.w r10,4[sp]
+	movea 239,r0,r10
+	mov 2,r7
+	mov r29,r6
+	st.w r7,8[sp]
+	st.w r10,12[sp]
+	st.w r7,16[sp]
+	mov r7,r8
+	mov 4,r9
+	jal _eris_low_sup_set_video_mode
+	jr __load_r29_fp
+	.size	_Init_Sprite, .-_Init_Sprite
+	.align 2
+	.global _Update_Sprite
+	.type	_Update_Sprite, @function
+_Update_Sprite:
+	mov lp, r1
+	jal __save_r27_fp
+	mov r6,r27
+	mov r7,r29
+	mov r8,r28
+	mov 0,r6
+	andi 65535,r9,r7
+	jal _eris_low_sup_set_vram_write
+	cmp 0,r28
+	ble .L34
+	add r28,r28
+	add r29,r28
+.L33:
+	ld.h 0[r29],r7
+	mov 0,r6
+	add 2,r29
+	andi 65535,r7,r7
+	jal _eris_low_sup_vram_write
+	cmp r28,r29
+	bne .L33
+.L34:
+	mov r27,r6
+	jal _eris_sup_set
+	mov 0,r6
+	jal _eris_sup_spr_set
+	mov 0,r6
+	mov 0,r7
+	mov 0,r8
+	mov 0,r9
+	jal _eris_sup_spr_create
+	jr __load_r27_fp
+	.size	_Update_Sprite, .-_Update_Sprite
+	.align 2
+	.global _Move_Sprite
+	.type	_Move_Sprite, @function
+_Move_Sprite:
+	mov lp, r1
+	jal __save_r28_fp
+	mov r7,r28
+	mov r8,r29
+	jal _eris_sup_set
+	mov 0,r6
+	jal _eris_sup_spr_set
+	mov r28,r6
+	mov r29,r7
+	shl 16,r6 ; sar 16,r6
+	shl 16,r7 ; sar 16,r7
+	jal _eris_sup_spr_xy
+	jr __load_r28_fp
+	.size	_Move_Sprite, .-_Move_Sprite
+	.align 2
+	.global _Upload_Palette
+	.type	_Upload_Palette, @function
+_Upload_Palette:
+	mov lp, r1
+	jal __save_r27_fp
+	mov 0,r29
+	mov r6,r28
+	movea 256,r0,r27
+.L39:
+	ld.h 0[r28],r7
+	mov r29,r6
+	andi 65535,r7,r7
+	add 1,r29
+	jal _eris_tetsu_set_palette
+	add 2,r28
+	cmp r27,r29
+	bne .L39
+	jr __load_r27_fp
+	.size	_Upload_Palette, .-_Upload_Palette
+	.align 2
+	.global _Empty_Palette
+	.type	_Empty_Palette, @function
+_Empty_Palette:
+	mov lp, r1
+	jal __save_r28_fp
+	mov 0,r29
+	movea 256,r0,r28
+.L42:
+	mov r29,r6
+	movea 2184,r0,r7
+	add 1,r29
+	jal _eris_tetsu_set_palette
+	cmp r28,r29
+	bne .L42
+	jr __load_r28_fp
+	.size	_Empty_Palette, .-_Empty_Palette
+	.align 2
+	.global _Adjust_Palette_Brightness_YUV
+	.type	_Adjust_Palette_Brightness_YUV, @function
+_Adjust_Palette_Brightness_YUV:
+	ld.w 0[sp],r14
+	cmp 0,r8
+	ble .L44
+	add r8,r8
+	mov 0,r12
+	movea 255,r0,r15
+.L47:
+	mov r6,r10
+	add r12,r10
+	mov r7,r13
+	add r12,r13
+	ld.h 0[r10],r11
+	add 2,r12
+	andi 65535,r11,r11
+	mov r11,r10
+	andi 255,r11,r11
+	shr 8,r10
+	mul r9,r10
+	divu r14,r10
+	cmp r15,r10
+	bnh .L46
+	movea 255,r0,r10
+.L46:
+	shl 8,r10
+	or r11,r10
+	st.h r10,0[r13]
+	cmp r8,r12
+	bne .L47
+.L44:
+	jmp [r31]
+	.size	_Adjust_Palette_Brightness_YUV, .-_Adjust_Palette_Brightness_YUV
+	.align 2
+	.global _fadeOutPalette
+	.type	_fadeOutPalette, @function
+_fadeOutPalette:
+	mov lp, r1
+	jal __save_r22_fp
+	movhi hi(_original_Y),r0,r26
+	movhi hi(_original_Y+1024),r0,r13
+	movea lo(_original_Y),r26,r26
+	mov r6,r22
+	mov r6,r12
+	movea lo(_original_Y+1024),r13,r13
+	mov r26,r10
+.L51:
+	ld.b 1[r12],r11
+	andi 255,r11,r11
+	st.w r11,0[r10]
+	add 2,r12
+	add 4,r10
+	cmp r13,r10
+	bne .L51
+	movhi hi(_adjusted_pal),r0,r25
+	movea 16,r0,r29
+	movea lo(_adjusted_pal),r25,r25
+	movea 512,r0,r27
+	movea 256,r0,r28
+.L52:
+	mov r26,r13
+	mov 0,r11
+.L53:
+	mov r22,r12
+	movhi hi(_adjusted_pal),r0,r14
+	add r11,r12
+	movea lo(_adjusted_pal),r14,r14
+	add r11,r14
+	ld.w 0[r13],r10
+	ld.h 0[r12],r12
+	mul r29,r10
+	andi 255,r12,r12
+	shr 4,r10
+	shl 8,r10
+	or r12,r10
+	st.h r10,0[r14]
+	add 2,r11
+	add 4,r13
+	cmp r27,r11
+	bne .L53
+	mov r25,r23
+	mov 0,r24
+.L54:
+	ld.h 0[r23],r7
+	mov r24,r6
+	andi 65535,r7,r7
+	add 1,r24
+	jal _eris_tetsu_set_palette
+	add 2,r23
+	cmp r28,r24
+	bne .L54
+.L60:
+	ld.w sdaoff(_last_sda_frame_count)[gp],r11
+	ld.w sdaoff(_sda_frame_count)[gp],r10
+	cmp r10,r11
+	bge .L60
+	ld.w sdaoff(_sda_frame_count)[gp],r10
+	st.w r10,sdaoff(_last_sda_frame_count)[gp]
+	add -1,r29
+	cmp -1,r29
+	bne .L52
+	mov 0,r29
+	movea 256,r0,r28
+.L56:
+	mov r29,r6
+	movea 2184,r0,r7
+	add 1,r29
+	jal _eris_tetsu_set_palette
+	cmp r28,r29
+	bne .L56
+.L59:
+	ld.w sdaoff(_last_sda_frame_count)[gp],r11
+	ld.w sdaoff(_sda_frame_count)[gp],r10
+	cmp r10,r11
+	bge .L59
+	ld.w sdaoff(_sda_frame_count)[gp],r10
+	st.w r10,sdaoff(_last_sda_frame_count)[gp]
+	jr __load_r22_fp
+	.size	_fadeOutPalette, .-_fadeOutPalette
+	.align 2
+	.global _fadeInPalette
+	.type	_fadeInPalette, @function
+_fadeInPalette:
+	mov lp, r1
+	jal __save_r21_fp
+	movhi hi(_original_Y),r0,r26
+	movhi hi(_original_Y+1024),r0,r13
+	movea lo(_original_Y),r26,r26
+	mov r6,r21
+	mov r6,r12
+	movea lo(_original_Y+1024),r13,r13
+	mov r26,r10
+.L68:
+	ld.b 1[r12],r11
+	andi 255,r11,r11
+	st.w r11,0[r10]
+	add 2,r12
+	add 4,r10
+	cmp r13,r10
+	bne .L68
+	movhi hi(_adjusted_pal),r0,r25
+	mov 0,r29
+	movea lo(_adjusted_pal),r25,r25
+	movea 512,r0,r27
+	movea 256,r0,r28
+	movea 17,r0,r24
+.L69:
+	mov r26,r13
+	mov 0,r11
+.L70:
+	mov r21,r12
+	movhi hi(_adjusted_pal),r0,r14
+	add r11,r12
+	movea lo(_adjusted_pal),r14,r14
+	add r11,r14
+	ld.w 0[r13],r10
+	ld.h 0[r12],r12
+	mul r29,r10
+	andi 255,r12,r12
+	shr 4,r10
+	shl 8,r10
+	or r12,r10
+	st.h r10,0[r14]
+	add 2,r11
+	add 4,r13
+	cmp r27,r11
+	bne .L70
+	mov r25,r22
+	mov 0,r23
+.L71:
+	ld.h 0[r22],r7
+	mov r23,r6
+	andi 65535,r7,r7
+	add 1,r23
+	jal _eris_tetsu_set_palette
+	add 2,r22
+	cmp r28,r23
+	bne .L71
+.L74:
+	ld.w sdaoff(_last_sda_frame_count)[gp],r11
+	ld.w sdaoff(_sda_frame_count)[gp],r10
+	cmp r10,r11
+	bge .L74
+	ld.w sdaoff(_sda_frame_count)[gp],r10
+	st.w r10,sdaoff(_last_sda_frame_count)[gp]
+	add 1,r29
+	cmp r24,r29
+	bne .L69
+	jr __load_r21_fp
+	.size	_fadeInPalette, .-_fadeInPalette
+	.align 2
+	.global _Clear_BG0
+	.type	_Clear_BG0, @function
+_Clear_BG0:
+	mov lp, r1
+	jal __save_r29_fp
+	mov 0,r6
+	mov 1,r7
+	movhi hi(61440),r0,r29
+	jal _eris_king_set_kram_write
+	movea lo(61440),r29,r29
+.L80:
+	add -1,r29
+	mov 0,r6
+	jal _eris_king_kram_write
+	cmp 0,r29
+	bne .L80
+	mov 0,r6
+	mov 1,r7
+	jal _eris_king_set_kram_write
+	jr __load_r29_fp
+	.size	_Clear_BG0, .-_Clear_BG0
+	.align 2
+	.global _Initialize_ADPCM
+	.type	_Initialize_ADPCM, @function
+_Initialize_ADPCM:
+	mov lp, r1
+	jal __save_r28_fp
+	add -4,sp
+	mov 0,r9
+	mov 1,r7
+	st.w r6,sdaoff(_mainfreq)[gp]
+	mov r7,r8
+	st.w r0,0[sp]
+	jal _eris_low_adpcm_set_control
+	movea 63,r0,r29
+	mov 0,r6
+	mov r29,r7
+	mov r29,r8
+	jal _eris_low_adpcm_set_volume
+	mov r29,r8
+	mov r29,r7
+	mov 1,r6
+	jal _eris_low_adpcm_set_volume
+	movea 1536,r0,r28
+	movea 81,r0,r7
+	mov r28,r6
+	jal _out16
+	movea 1540,r0,r29
+	mov 0,r7
+	mov r29,r6
+	jal _out16
+	mov r28,r6
+	movea 82,r0,r7
+	jal _out16
+	mov r29,r6
+	mov 0,r7
+	jal _out16
+	jr __load_r28_fp
+	.size	_Initialize_ADPCM, .-_Initialize_ADPCM
+	.align 2
+	.global _LoadADPCMCD
+	.type	_LoadADPCMCD, @function
+_LoadADPCMCD:
+	mov lp, r1
+	jal __save_r26_fp
+	mov r7,r27
+	mov r8,r28
+	mov r6,r26
+	mov r8,r6
+	jal _malloc
+	mov r28,r8
+	mov r10,r29
+	mov r26,r6
+	mov r10,r7
+	jal _eris_cd_read
+	mov r27,r6
+	mov 1,r7
+	jal _eris_king_set_kram_read
+	mov r27,r6
+	mov 1,r7
+	jal _eris_king_set_kram_write
+	mov r29,r6
+	mov r28,r7
+	jal _king_kram_write_buffer
+	mov r29,r6
+	jal _free
+	jr __load_r26_fp
+	.size	_LoadADPCMCD, .-_LoadADPCMCD
+	.align 2
+	.global _Reset_ADPCM
+	.type	_Reset_ADPCM, @function
+_Reset_ADPCM:
+	mov lp, r1
+	jal __save_r28_fp
+	movea 1536,r0,r28
+	movea 82,r0,r7
+	mov r28,r6
+	jal _out16
+	movea 1540,r0,r29
+	mov 0,r7
+	mov r29,r6
+	jal _out16
+	mov r28,r6
+	movea 92,r0,r7
+	jal _out16
+	mov r29,r6
+	mov 0,r7
+	jal _out16
+	mov r28,r6
+	movea 81,r0,r7
+	jal _out16
+	mov r29,r6
+	mov 0,r7
+	jal _out16
+	mov r28,r6
+	movea 88,r0,r7
+	jal _out16
+	mov r29,r6
+	mov 0,r7
+	jal _out16
+	mov r28,r6
+	movea 93,r0,r7
+	jal _out16
+	mov r29,r6
+	mov 0,r7
+	jal _out32
+	mov r28,r6
+	movea 89,r0,r7
+	jal _out16
+	mov r29,r6
+	mov 0,r7
+	jal _out32
+	mov r28,r6
+	movea 80,r0,r7
+	jal _out16
+	mov r29,r6
+	mov 0,r7
+	jal _out16
+	jr __load_r28_fp
+	.size	_Reset_ADPCM, .-_Reset_ADPCM
+	.align 2
+	.global _Play_ADPCM
+	.type	_Play_ADPCM, @function
+_Play_ADPCM:
+	mov lp, r1
+	jal __save_r26_fp
+	mov r6,r26
+	mov r7,r28
+	mov r7,r6
+	mov r8,r29
+	andi 255,r9,r27
+	mov 1,r7
+	jal _eris_king_set_kram_read
+	movea 1536,r0,r6
+	cmp 1,r26
+	be .L92
+	movea 81,r0,r7
+	jal _out16
+	movea 1540,r0,r6
+	mov r27,r7
+	jal _out16
+	movea 88,r0,r7
+	movea 1536,r0,r6
+	jal _out16
+	mov r28,r7
+	cmp 0,r28
+	blt .L93
+.L89:
+	movea 1540,r0,r6
+	sar 8,r7
+	andi 65535,r7,r7
+	jal _out16
+	movea 1536,r0,r6
+	movea 89,r0,r7
+	jal _out16
+.L88:
+	movea 1540,r0,r6
+	addi -2048,r29,r29
+	mov r29,r7
+	sar 1,r7
+	add r28,r7
+	jal _out32
+	movea 1536,r0,r6
+	movea 80,r0,r7
+	jal _out16
+	ld.w 24[fp],r10
+	add -1,r10
+	cmp 2,r10
+	bh .L91
+	shl 2,r10
+	movea sdaoff(_CSWTCH___61),gp,r11
+	add r11,r10
+	movea 1540,r0,r6
+	ld.w 0[r10],r7
+	andi 65535,r7,r7
+	jal _out16
+	jr __load_r26_fp
+.L91:
+	mov 3,r7
+	movea 1540,r0,r6
+	jal _out16
+	jr __load_r26_fp
+.L92:
+	movea 82,r0,r7
+	jal _out16
+	movea 1540,r0,r6
+	mov r27,r7
+	jal _out16
+	movea 92,r0,r7
+	movea 1536,r0,r6
+	jal _out16
+	mov r28,r7
+	cmp 0,r28
+	blt .L94
+.L87:
+	sar 8,r7
+	movea 1540,r0,r6
+	andi 65535,r7,r7
+	jal _out16
+	movea 1536,r0,r6
+	movea 93,r0,r7
+	jal _out16
+	br .L88
+.L93:
+	addi 255,r28,r7
+	br .L89
+.L94:
+	addi 255,r28,r7
+	br .L87
+	.size	_Play_ADPCM, .-_Play_ADPCM
+	.align 2
+	.global _Play_PSGSample
+	.type	_Play_PSGSample, @function
+_Play_PSGSample:
+	mov lp, r1
+	jal __save_r27_fp
+	mov r8,r27
+	mov r6,r28
+	mov r7,r29
+	mov 15,r6
+	mov r6,r7
+	jal _eris_low_psg_set_main_volume
+	andi 255,r28,r6
+	jal _eris_low_psg_set_channel
+	mov 1,r7
+	movea 31,r0,r6
+	mov r7,r8
+	jal _eris_low_psg_set_volume
+	mov 15,r6
+	mov r6,r7
+	jal _eris_low_psg_set_balance
+	mov 0,r6
+	jal _eris_low_psg_set_freq
+	mov 0,r7
+	mov 0,r6
+	jal _eris_low_psg_set_noise
+	mov r29,r7
+	movea sdaoff(_samplepsg_play),gp,r10
+	shl 2,r7
+	movea sdaoff(_samplepsg_loop),gp,r11
+	add r7,r10
+	add r7,r11
+	movea sdaoff(_samplepsg_ch),gp,r12
+	add r12,r7
+	st.w r27,0[r11]
+	mov 1,r11
+	st.w r28,0[r7]
+	st.w r11,0[r10]
+	jr __load_r27_fp
+	.size	_Play_PSGSample, .-_Play_PSGSample
+	.align 2
+	.global _Load_PSGSample
+	.type	_Load_PSGSample, @function
+_Load_PSGSample:
+	mov lp, r1
+	jal __save_r31_fp
+	movea sdaoff(_samplepsg_size),gp,r10
+	mov r7,r11
+	shl 2,r11
+	add r10,r11
+	add r7,r7
+	mov r7,r10
+	shl 16,r10
+	sub r7,r10
+	mov r10,r7
+	movhi hi(_samplepsg_buf),r0,r10
+	movea lo(_samplepsg_buf),r10,r10
+	st.w r8,0[r11]
+	add r10,r7
+	jal _eris_cd_read
+	jr __load_r31_fp
+	.size	_Load_PSGSample, .-_Load_PSGSample
+	.align 2
+	.global _Load_PSGSample_RAM
+	.type	_Load_PSGSample_RAM, @function
+_Load_PSGSample_RAM:
+	mov lp, r1
+	jal __save_r31_fp
+	movea sdaoff(_samplepsg_size),gp,r10
+	mov r7,r11
+	shl 2,r11
+	add r10,r11
+	mov r7,r10
+	add r7,r10
+	st.w r8,0[r11]
+	mov r6,r7
+	mov r10,r11
+	shl 16,r11
+	mov r11,r6
+	sub r10,r6
+	movhi hi(_samplepsg_buf),r0,r10
+	movea lo(_samplepsg_buf),r10,r10
+	add r10,r6
+	jal _memcpy
+	jr __load_r31_fp
+	.size	_Load_PSGSample_RAM, .-_Load_PSGSample_RAM
+	.align 2
+	.global _Stop_PSGSample
+	.type	_Stop_PSGSample, @function
+_Stop_PSGSample:
+	mov lp, r1
+	jal __save_r29_fp
+	mov r7,r29
+	andi 255,r6,r6
+	jal _eris_low_psg_set_channel
+	mov r29,r7
+	movea sdaoff(_samplepsg_play),gp,r10
+	shl 2,r7
+	movea sdaoff(_samplepsg_loop),gp,r11
+	add r7,r10
+	add r11,r7
+	st.w r0,0[r10]
+	st.w r0,0[r7]
+	jr __load_r29_fp
+	.size	_Stop_PSGSample, .-_Stop_PSGSample
+	.align 2
+	.global _increment_zda_timer_count
+	.type	_increment_zda_timer_count, @function
+_increment_zda_timer_count:
+	ld.w zdaoff(_zda_timer_count)[r0],r10
+	add 1,r10
+	st.w r10,zdaoff(_zda_timer_count)[r0]
+	ld.w zdaoff(_frame_text)[r0],r10
+	add 1,r10
+	st.w r10,zdaoff(_frame_text)[r0]
+	jmp [r31]
+	.size	_increment_zda_timer_count, .-_increment_zda_timer_count
+	.align 2
+	.global _my_timer_irq
+	.type	_my_timer_irq, @function
+_my_timer_irq:
+	add -4,sp
+	st.w r1,0[sp]
+	addi -68,sp,sp
+	st.w fp,0[sp]
+	st.w r6,64[sp]
+	st.w r7,60[sp]
+	st.w r8,56[sp]
+	st.w r9,52[sp]
+	st.w r10,48[sp]
+	st.w r11,44[sp]
+	st.w r12,40[sp]
+	st.w r13,36[sp]
+	st.w r14,32[sp]
+	st.w r15,28[sp]
+	st.w r16,24[sp]
+	st.w r17,20[sp]
+	st.w r18,16[sp]
+	st.w r19,12[sp]
+	st.w r30,8[sp]
+	st.w lp,4[sp]
+	mov sp,fp
+	jal _eris_timer_ack_irq
+	jal _increment_zda_timer_count
+	ld.w 64[fp],r6
+	ld.w 60[fp],r7
+	ld.w 56[fp],r8
+	ld.w 52[fp],r9
+	ld.w 48[fp],r10
+	ld.w 44[fp],r11
+	ld.w 40[fp],r12
+	ld.w 36[fp],r13
+	ld.w 32[fp],r14
+	ld.w 28[fp],r15
+	ld.w 24[fp],r16
+	ld.w 20[fp],r17
+	ld.w 16[fp],r18
+	ld.w 12[fp],r19
+	ld.w 8[fp],r30
+	ld.w 4[fp],lp
+	movea lo(68),fp,r1
+	ld.w 0[fp],fp
+	mov r1,sp
+	ld.w 0[sp],r1
+	add 4,sp
+	reti
+	.size	_my_timer_irq, .-_my_timer_irq
+	.align 2
+	.global _samplepsg_timer_irq
+	.type	_samplepsg_timer_irq, @function
+_samplepsg_timer_irq:
+	add -4,sp
+	st.w r1,0[sp]
+	addi -76,sp,sp
+	st.w fp,0[sp]
+	st.w r6,72[sp]
+	st.w r7,68[sp]
+	st.w r8,64[sp]
+	st.w r9,60[sp]
+	st.w r10,56[sp]
+	st.w r11,52[sp]
+	st.w r12,48[sp]
+	st.w r13,44[sp]
+	st.w r14,40[sp]
+	st.w r15,36[sp]
+	st.w r16,32[sp]
+	st.w r17,28[sp]
+	st.w r18,24[sp]
+	st.w r19,20[sp]
+	st.w r30,16[sp]
+	st.w r28,12[sp]
+	st.w r29,8[sp]
+	st.w lp,4[sp]
+	mov sp,fp
+	jal _eris_timer_ack_irq
+	jal _increment_zda_timer_count
+	ld.w sdaoff(_samplepsg_play)[gp],r10
+	cmp 0,r10
+	bne .L148
+.L103:
+	movea sdaoff(_samplepsg_play),gp,r29
+	ld.w 4[r29],r10
+	cmp 0,r10
+	be .+6 ; jr .L149
+.L105:
+	movea sdaoff(_samplepsg_play),gp,r28
+	ld.w 8[r29],r10
+	cmp 0,r10
+	be .+6 ; jr .L150
+.L107:
+	movea sdaoff(_samplepsg_play),gp,r28
+	ld.w 12[r29],r10
+	cmp 0,r10
+	be .+6 ; jr .L151
+.L109:
+	movea sdaoff(_samplepsg_play),gp,r28
+	ld.w 16[r29],r10
+	cmp 0,r10
+	be .+6 ; jr .L152
+.L111:
+	movea sdaoff(_samplepsg_play),gp,r28
+	ld.w 20[r29],r10
+	cmp 0,r10
+	bne .L153
+.L101:
+	ld.w 72[fp],r6
+	ld.w 68[fp],r7
+	ld.w 64[fp],r8
+	ld.w 60[fp],r9
+	ld.w 56[fp],r10
+	ld.w 52[fp],r11
+	ld.w 48[fp],r12
+	ld.w 44[fp],r13
+	ld.w 40[fp],r14
+	ld.w 36[fp],r15
+	ld.w 32[fp],r16
+	ld.w 28[fp],r17
+	ld.w 24[fp],r18
+	ld.w 20[fp],r19
+	ld.w 16[fp],r30
+	ld.w 12[fp],r28
+	ld.w 8[fp],r29
+	ld.w 4[fp],lp
+	movea lo(76),fp,r1
+	ld.w 0[fp],fp
+	mov r1,sp
+	ld.w 0[sp],r1
+	add 4,sp
+	reti
+.L148:
+	ld.w sdaoff(_samplepsg_ch)[gp],r6
+	andi 255,r6,r6
+	jal _eris_low_psg_set_channel
+	ld.w sdaoff(_samplepsg_play)[gp],r10
+	movhi hi(_samplepsg_buf),r0,r11
+	movea lo(_samplepsg_buf),r11,r11
+	add r11,r10
+	ld.b -1[r10],r6
+	andi 255,r6,r6
+	jal _eris_low_psg_waveform_data
+	ld.w sdaoff(_samplepsg_play)[gp],r10
+	add 1,r10
+	st.w r10,sdaoff(_samplepsg_play)[gp]
+	ld.w sdaoff(_samplepsg_size)[gp],r11
+	addi -2047,r11,r11
+	cmp r11,r10
+	blt .L103
+	st.w r0,sdaoff(_samplepsg_play)[gp]
+	ld.w sdaoff(_samplepsg_loop)[gp],r10
+	cmp 0,r10
+	be .L103
+	mov 1,r10
+	st.w r10,sdaoff(_samplepsg_play)[gp]
+	br .L103
+.L153:
+	movea sdaoff(_samplepsg_ch),gp,r10
+	ld.w 20[r10],r6
+	andi 255,r6,r6
+	jal _eris_low_psg_set_channel
+	movhi hi(_samplepsg_buf),r0,r11
+	movea lo(_samplepsg_buf),r11,r11
+	ld.w 20[r28],r10
+	add r11,r10
+	movhi hi(655349),r0,r11
+	movea lo(655349),r11,r11
+	add r11,r10
+	ld.b 0[r10],r6
+	andi 255,r6,r6
+	jal _eris_low_psg_waveform_data
+	movea sdaoff(_samplepsg_size),gp,r11
+	ld.w 20[r28],r10
+	add 1,r10
+	st.w r10,20[r28]
+	ld.w 20[r11],r11
+	addi -2047,r11,r11
+	cmp r11,r10
+	blt .L101
+	movea sdaoff(_samplepsg_loop),gp,r10
+	st.w r0,20[r28]
+	ld.w 20[r10],r10
+	cmp 0,r10
+	bne .+6 ; jr .L101
+	mov 1,r10
+	st.w r10,20[r28]
+	jr .L101
+.L152:
+	movea sdaoff(_samplepsg_ch),gp,r10
+	ld.w 16[r10],r6
+	andi 255,r6,r6
+	jal _eris_low_psg_set_channel
+	movhi hi(_samplepsg_buf),r0,r11
+	movea lo(_samplepsg_buf),r11,r11
+	ld.w 16[r28],r10
+	add r11,r10
+	movhi hi(524279),r0,r11
+	movea lo(524279),r11,r11
+	add r11,r10
+	ld.b 0[r10],r6
+	andi 255,r6,r6
+	jal _eris_low_psg_waveform_data
+	movea sdaoff(_samplepsg_size),gp,r11
+	ld.w 16[r28],r10
+	add 1,r10
+	st.w r10,16[r28]
+	ld.w 16[r11],r11
+	addi -2047,r11,r11
+	cmp r11,r10
+	bge .+6 ; jr .L111
+	movea sdaoff(_samplepsg_loop),gp,r10
+	st.w r0,16[r28]
+	ld.w 16[r10],r10
+	cmp 0,r10
+	bne .+6 ; jr .L111
+	mov 1,r10
+	st.w r10,16[r28]
+	jr .L111
+.L151:
+	movea sdaoff(_samplepsg_ch),gp,r10
+	ld.w 12[r10],r6
+	andi 255,r6,r6
+	jal _eris_low_psg_set_channel
+	movhi hi(_samplepsg_buf),r0,r11
+	movea lo(_samplepsg_buf),r11,r11
+	ld.w 12[r28],r10
+	add r11,r10
+	movhi hi(393209),r0,r11
+	movea lo(393209),r11,r11
+	add r11,r10
+	ld.b 0[r10],r6
+	andi 255,r6,r6
+	jal _eris_low_psg_waveform_data
+	movea sdaoff(_samplepsg_size),gp,r11
+	ld.w 12[r28],r10
+	add 1,r10
+	st.w r10,12[r28]
+	ld.w 12[r11],r11
+	addi -2047,r11,r11
+	cmp r11,r10
+	bge .+6 ; jr .L109
+	movea sdaoff(_samplepsg_loop),gp,r10
+	st.w r0,12[r28]
+	ld.w 12[r10],r10
+	cmp 0,r10
+	bne .+6 ; jr .L109
+	mov 1,r10
+	st.w r10,12[r28]
+	jr .L109
+.L150:
+	movea sdaoff(_samplepsg_ch),gp,r10
+	ld.w 8[r10],r6
+	andi 255,r6,r6
+	jal _eris_low_psg_set_channel
+	movhi hi(_samplepsg_buf),r0,r11
+	movea lo(_samplepsg_buf),r11,r11
+	ld.w 8[r28],r10
+	add r11,r10
+	movhi hi(262139),r0,r11
+	movea lo(262139),r11,r11
+	add r11,r10
+	ld.b 0[r10],r6
+	andi 255,r6,r6
+	jal _eris_low_psg_waveform_data
+	movea sdaoff(_samplepsg_size),gp,r11
+	ld.w 8[r28],r10
+	add 1,r10
+	st.w r10,8[r28]
+	ld.w 8[r11],r11
+	addi -2047,r11,r11
+	cmp r11,r10
+	bge .+6 ; jr .L107
+	movea sdaoff(_samplepsg_loop),gp,r10
+	st.w r0,8[r28]
+	ld.w 8[r10],r10
+	cmp 0,r10
+	bne .+6 ; jr .L107
+	mov 1,r10
+	st.w r10,8[r28]
+	jr .L107
+.L149:
+	movea sdaoff(_samplepsg_ch),gp,r10
+	ld.w 4[r10],r6
+	andi 255,r6,r6
+	jal _eris_low_psg_set_channel
+	movhi hi(_samplepsg_buf),r0,r11
+	movea lo(_samplepsg_buf),r11,r11
+	ld.w 4[r29],r10
+	add r11,r10
+	movhi hi(131069),r0,r11
+	movea lo(131069),r11,r11
+	add r11,r10
+	ld.b 0[r10],r6
+	andi 255,r6,r6
+	jal _eris_low_psg_waveform_data
+	movea sdaoff(_samplepsg_size),gp,r11
+	ld.w 4[r29],r10
+	add 1,r10
+	st.w r10,4[r29]
+	ld.w 4[r11],r11
+	addi -2047,r11,r11
+	cmp r11,r10
+	bge .+6 ; jr .L105
+	movea sdaoff(_samplepsg_loop),gp,r10
+	st.w r0,4[r29]
+	ld.w 4[r10],r10
+	cmp 0,r10
+	bne .+6 ; jr .L105
+	mov 1,r10
+	st.w r10,4[r29]
+	jr .L105
+	.size	_samplepsg_timer_irq, .-_samplepsg_timer_irq
+	.align 2
+	.global _vsync
+	.type	_vsync, @function
+_vsync:
+.L155:
+	ld.w sdaoff(_last_sda_frame_count)[gp],r10
+	ld.w sdaoff(_sda_frame_count)[gp],r11
+	add r6,r10
+	cmp r11,r10
+	bge .L155
+	ld.w sdaoff(_sda_frame_count)[gp],r10
+	st.w r10,sdaoff(_last_sda_frame_count)[gp]
+	jmp [r31]
+	.size	_vsync, .-_vsync
+	.align 2
+	.global _getFps
+	.type	_getFps, @function
+_getFps:
+	movea 1000,r0,r11
+	ld.w zdaoff(_zda_timer_count)[r0],r10
+	div r11,r10
+	ld.w sdaoff(_prev_sec___3365)[gp],r11
+	cmp r11,r10
+	be .L160
+	st.w r10,sdaoff(_prev_sec___3365)[gp]
+	ld.w sdaoff(_prev_nframe___3366)[gp],r10
+	ld.w sdaoff(_nframe)[gp],r11
+	mov r11,r12
+	st.w r11,sdaoff(_prev_nframe___3366)[gp]
+	sub r10,r12
+	mov r12,r10
+	st.w r12,sdaoff(_fps___3364)[gp]
+	jmp [r31]
+.L160:
+	ld.w sdaoff(_fps___3364)[gp],r10
+	jmp [r31]
+	.size	_getFps, .-_getFps
+	.align 2
+	.global _getTicks
+	.type	_getTicks, @function
+_getTicks:
+	ld.w zdaoff(_zda_timer_count)[r0],r10
+	jmp [r31]
+	.size	_getTicks, .-_getTicks
+	.align 2
+	.global _initTimer
+	.type	_initTimer, @function
+_initTimer:
+	mov lp, r1
+	jal __save_r28_fp
+	mov r7,r29
+	mov r6,r28
+	movea 127,r0,r6
+	jal _irq_set_mask
+	mov 12,r6
+	movhi hi(_my_vblank_irq),r0,r7
+	movea lo(_my_vblank_irq),r7,r7
+	jal _irq_set_raw_handler
+	mov 9,r6
+	cmp 0,r28
+	bne .L165
+	movhi hi(_my_timer_irq),r0,r7
+	movea lo(_my_timer_irq),r7,r7
+	jal _irq_set_raw_handler
+.L164:
+	movea 55,r0,r6
+	jal _irq_set_mask
+	jal _eris_timer_init
+	mov r29,r6
+	jal _eris_timer_set_period
+	mov 1,r6
+	jal _eris_timer_start
+	mov 8,r6
+	st.w r0,zdaoff(_zda_timer_count)[r0]
+	jal _irq_set_level
+	jal _irq_enable
+	jr __load_r28_fp
+.L165:
+	movhi hi(_samplepsg_timer_irq),r0,r7
+	movea lo(_samplepsg_timer_irq),r7,r7
+	jal _irq_set_raw_handler
+	br .L164
+	.size	_initTimer, .-_initTimer
+	.align 2
+	.global _GetSeconds
+	.type	_GetSeconds, @function
+_GetSeconds:
+	ld.w zdaoff(_zda_timer_count)[r0],r10
+	cmp 0,r10
+	be .L167
+	ld.w zdaoff(_zda_timer_count)[r0],r10
+	movea 1000,r0,r11
+	div r11,r10
+.L167:
+	jmp [r31]
+	.size	_GetSeconds, .-_GetSeconds
+	.align 2
+	.global _Reset_ZDA
+	.type	_Reset_ZDA, @function
+_Reset_ZDA:
+	st.w r0,zdaoff(_zda_timer_count)[r0]
+	jmp [r31]
+	.size	_Reset_ZDA, .-_Reset_ZDA
+	.align 2
+	.global _chartou32
+	.type	_chartou32, @function
+_chartou32:
+	mov lp, r1
+	jal __save_r28_fp
+	mov r6,r29
+	mov r7,r28
+	jal _strlen8
+	cmp 0,r10
+	ble .L175
+	shl 2,r10
+	mov r28,r13
+	mov r29,r6
+	mov r28,r11
+	add r10,r13
+.L174:
+	ld.b 0[r6],r12
+	st.w r12,0[r11]
+	add 1,r6
+	add 4,r11
+	cmp r13,r11
+	bne .L174
+.L173:
+	add r28,r10
+	st.w r0,0[r10]
+	jr __load_r28_fp
+.L175:
+	mov 0,r10
+	br .L173
+	.size	_chartou32, .-_chartou32
+	.align 2
+	.global _printstr
+	.type	_printstr, @function
+_printstr:
+	mov lp, r1
+	jal __save_r23_fp
+	shl 5,r8
+	mov r6,r27
+	mov r8,r29
+	mov r9,r25
+	add r7,r29
+	jal _strlen32
+	cmp 0,r10
+	ble .L177
+	mov r29,r26
+	movea 16,r0,r28
+	add r10,r26
+.L200:
+	ld.w 0[r27],r6
+	cmp 0,r25
+	be .L243
+	mov 2,r7
+	mov 0,r23
+	jal _eris_romfont_get
+	mov r10,r24
+	br .L199
+.L244:
+	andi 65535,r6,r6
+.L192:
+	andi 4,r11,r10
+	be .L193
+	ori 16,r6,r6
+.L193:
+	andi 8,r11,r10
+	be .L194
+	ori 64,r6,r6
+.L194:
+	andi 16,r11,r10
+	be .L195
+	ori 256,r6,r6
+.L195:
+	andi 32,r11,r10
+	be .L196
+	ori 1024,r6,r6
+.L196:
+	andi 64,r11,r10
+	be .L197
+	ori 4096,r6,r6
+.L197:
+	sar 7,r11
+	be .L198
+	ori 16384,r6,r6
+.L198:
+	add 1,r23
+	jal _eris_king_kram_write
+	cmp r28,r23
+	be .L190
+.L199:
+	mov r23,r6
+	mov 1,r7
+	shl 5,r6
+	add r29,r6
+	jal _eris_king_set_kram_write
+	mov r24,r10
+	add r23,r10
+	ld.b 0[r10],r11
+	andi 255,r11,r11
+	andi 1,r11,r6
+	andi 2,r11,r10
+	be .L244
+	ori 4,r6,r6
+	br .L192
+.L190:
+	add 4,r27
+	add 1,r29
+	cmp r26,r29
+	bne .L200
+.L177:
+	jr __load_r23_fp
+.L243:
+	mov 4,r7
+	mov 0,r23
+	jal _eris_romfont_get
+	mov r10,r24
+	br .L189
+.L245:
+	ori 4,r6,r6
+.L182:
+	andi 4,r11,r10
+	be .L183
+	ori 16,r6,r6
+.L183:
+	andi 8,r11,r10
+	be .L184
+	ori 64,r6,r6
+.L184:
+	andi 16,r11,r10
+	be .L185
+	ori 256,r6,r6
+.L185:
+	andi 32,r11,r10
+	be .L186
+	ori 1024,r6,r6
+.L186:
+	andi 64,r11,r10
+	be .L187
+	ori 4096,r6,r6
+.L187:
+	sar 7,r11
+	be .L188
+	ori 16384,r6,r6
+.L188:
+	add 1,r23
+	jal _eris_king_kram_write
+	cmp 8,r23
+	be .L190
+.L189:
+	mov r23,r6
+	mov 1,r7
+	shl 5,r6
+	add r29,r6
+	jal _eris_king_set_kram_write
+	mov r24,r10
+	add r23,r10
+	ld.b 0[r10],r11
+	andi 255,r11,r11
+	andi 1,r11,r6
+	andi 2,r11,r10
+	bne .L245
+	andi 65535,r6,r6
+	br .L182
+	.size	_printstr, .-_printstr
+	.align 2
+	.global _print_at
+	.type	_print_at, @function
+_print_at:
+	mov lp, r1
+	jal __save_r26_fp
+	mov 0,r29
+	mov r8,r27
+	shl 6,r7
+	mov r9,r28
+	add r6,r7
+	shl 12,r27
+	mov 0,r6
+	andi 65535,r7,r7
+	addi 256,r27,r27
+	movea 32,r0,r26
+	jal _eris_low_sup_set_vram_write
+	andi 65535,r27,r27
+	br .L247
+.L252:
+	add r27,r7
+	andi 65535,r7,r7
+.L248:
+	mov 0,r6
+	add 1,r29
+	jal _eris_low_sup_vram_write
+.L247:
+	mov r28,r6
+	jal _strlen8
+	mov r28,r11
+	add r29,r11
+	cmp r10,r29
+	bge .L251
+	ld.b 0[r11],r7
+	cmp r26,r7
+	bne .L252
+	movea 128,r0,r7
+	br .L248
+.L251:
+	jr __load_r26_fp
+	.size	_print_at, .-_print_at
+	.align 2
+	.global _putch_at
+	.type	_putch_at, @function
+_putch_at:
+	mov lp, r1
+	jal __save_r28_fp
+	mov r8,r29
+	mov r9,r28
+	shl 6,r7
+	add r6,r7
+	mov 0,r6
+	andi 65535,r7,r7
+	jal _eris_low_sup_set_vram_write
+	shl 24,r28 ; sar 24,r28
+	shl 12,r29
+	addi 256,r28,r7
+	mov 0,r6
+	add r29,r7
+	andi 65535,r7,r7
+	jal _eris_low_sup_vram_write
+	jr __load_r28_fp
+	.size	_putch_at, .-_putch_at
+	.section	.rodata
+.LC0:
+	.string	"%2d"
+.LC1:
+	.string	"%4d"
+.LC2:
+	.string	"%5d"
+	.section .text
+	.align 2
+	.global _putnumber_at
+	.type	_putnumber_at, @function
+_putnumber_at:
+	mov lp, r1
+	jal __save_r28_fp
+	addi -72,sp,sp
+	shl 6,r7
+	mov r8,r28
+	mov r7,r29
+	add r6,r29
+	cmp 2,r9
+	be .L260
+	cmp 4,r9
+	be .L261
+	cmp 5,r9
+	be .L262
+.L256:
+	andi 65535,r29,r7
+	mov 0,r6
+	shl 12,r28
+	mov 0,r29
+	addi 256,r28,r28
+	jal _eris_low_sup_set_vram_write
+	andi 65535,r28,r28
+	br .L258
+.L259:
+	ld.b 0[r11],r7
+	mov 0,r6
+	add r28,r7
+	add 1,r29
+	andi 65535,r7,r7
+	jal _eris_low_sup_vram_write
+.L258:
+	movea lo(-64),fp,r6
+	jal _strlen8
+	movea lo(-64),fp,r11
+	add r29,r11
+	cmp r10,r29
+	blt .L259
+	jr __load_r28_fp
+.L260:
+	ld.w 16[fp],r10
+	st.w r10,4[sp]
+	movhi hi(.LC0),r0,r10
+	movea lo(.LC0),r10,r10
+	movea lo(-64),fp,r6
+	st.w r10,0[sp]
+	jal _sprintf
+	br .L256
+.L261:
+	ld.w 16[fp],r10
+	st.w r10,4[sp]
+	movhi hi(.LC1),r0,r10
+	movea lo(.LC1),r10,r10
+	movea lo(-64),fp,r6
+	st.w r10,0[sp]
+	jal _sprintf
+	br .L256
+.L262:
+	ld.w 16[fp],r10
+	st.w r10,4[sp]
+	movhi hi(.LC2),r0,r10
+	movea lo(.LC2),r10,r10
+	movea lo(-64),fp,r6
+	st.w r10,0[sp]
+	jal _sprintf
+	br .L256
+	.size	_putnumber_at, .-_putnumber_at
+	.align 2
+	.global _cd_start_track
+	.type	_cd_start_track, @function
+_cd_start_track:
+	mov lp, r1
+	jal __save_r31_fp
+	add -12,sp
+	movea -40,r0,r10
+	st.h r0,-10[fp]
+	st.h r0,-8[fp]
+	st.h r0,-2[fp]
+	st.b r10,-10[fp]
+	movea -128,r0,r10
+	st.b r6,-8[fp]
+	st.h r0,-6[fp]
+	st.h r0,-4[fp]
+	st.b r10,-1[fp]
+	movea lo(-10),fp,r6
+	mov 10,r7
+	jal _eris_low_scsi_command
+	movea 2048,r0,r10
+.L264:
+#APP
+# 850 "./src/pcfx.c" 1
+	nop
+nop
+nop
+nop
+# 0 "" 2
+#NO_APP
+	add -1,r10
+	bne .L264
+	jal _eris_low_scsi_status
+	jr __load_r31_fp
+	.size	_cd_start_track, .-_cd_start_track
+	.align 2
+	.global _cd_end_track
+	.type	_cd_end_track, @function
+_cd_end_track:
+	mov lp, r1
+	jal __save_r31_fp
+	add -12,sp
+	movea -39,r0,r10
+	st.h r0,-8[fp]
+	st.h r0,-2[fp]
+	st.b r10,-10[fp]
+	movea -128,r0,r10
+	st.b r7,-9[fp]
+	st.b r6,-8[fp]
+	st.h r0,-6[fp]
+	st.h r0,-4[fp]
+	st.b r10,-1[fp]
+	movea lo(-10),fp,r6
+	mov 10,r7
+	jal _eris_low_scsi_command
+	movea 2048,r0,r10
+.L267:
+#APP
+# 886 "./src/pcfx.c" 1
+	nop
+nop
+nop
+nop
+# 0 "" 2
+#NO_APP
+	add -1,r10
+	bne .L267
+	jal _eris_low_scsi_status
+	jr __load_r31_fp
+	.size	_cd_end_track, .-_cd_end_track
+	.align 2
+	.global _cd_pausectrl
+	.type	_cd_pausectrl, @function
+_cd_pausectrl:
+	mov lp, r1
+	jal __save_r29_fp
+	add -12,sp
+	andi 255,r6,r29
+	jal _eris_low_scsi_reset
+	movea 71,r0,r10
+	st.b r0,-9[fp]
+	st.b r10,-10[fp]
+	st.b r0,-8[fp]
+	st.b r0,-7[fp]
+	st.b r0,-6[fp]
+	st.b r0,-5[fp]
+	st.b r0,-4[fp]
+	st.b r0,-3[fp]
+	mov r29,r10
+	cmp 0,r29
+	be .L270
+	mov 1,r10
+.L270:
+	st.b r10,-2[fp]
+	st.b r0,-1[fp]
+	movea lo(-10),fp,r6
+	mov 10,r7
+	jal _eris_low_scsi_command
+	movea 2048,r0,r10
+.L271:
+#APP
+# 923 "./src/pcfx.c" 1
+	nop
+nop
+nop
+nop
+# 0 "" 2
+#NO_APP
+	add -1,r10
+	bne .L271
+	jal _eris_low_scsi_status
+	jr __load_r29_fp
+	.size	_cd_pausectrl, .-_cd_pausectrl
+	.section .rosdata,"a"
+	.align 2
+	.type	_CSWTCH___61, @object
+	.size	_CSWTCH___61, 12
+_CSWTCH___61:
+	.long	7
+	.long	11
+	.long	15
+	.local	_fps___3364
+	.scomm	_fps___3364,4,4
+	.local	_prev_nframe___3366
+	.scomm	_prev_nframe___3366,4,4
+	.local	_prev_sec___3365
+	.scomm	_prev_sec___3365,4,4
+	.global _nframe
+	.section .sbss,"aw"
+	.align 2
+	.type	_nframe, @object
+	.size	_nframe, 4
+_nframe:
+	.zero	4
+	.global _last_sda_frame_count
+	.align 2
+	.type	_last_sda_frame_count, @object
+	.size	_last_sda_frame_count, 4
+_last_sda_frame_count:
+	.zero	4
+	.global _sda_frame_count
+	.align 2
+	.type	_sda_frame_count, @object
+	.size	_sda_frame_count, 4
+_sda_frame_count:
+	.zero	4
+	.global _frame_text
+	.section .zbss,"aw"
+	.align 2
+	.type	_frame_text, @object
+	.size	_frame_text, 4
+_frame_text:
+	.zero	4
+	.global _zda_timer_count
+	.align 2
+	.type	_zda_timer_count, @object
+	.size	_zda_timer_count, 4
+_zda_timer_count:
+	.zero	4
+	.comm	_original_Y,1024,4
+	.comm	_adjusted_pal,512,2
+	.scomm	_microprog,32,2
+	.scomm	_samplepsg_ch,24,4
+	.scomm	_samplepsg_loop,24,4
+	.scomm	_samplepsg_size,24,4
+	.scomm	_samplepsg_play,24,4
+	.comm	_samplepsg_buf,786420,1
+	.global _MEM_6270A_SR
+	.section .rosdata,"a"
+	.align 2
+	.type	_MEM_6270A_SR, @object
+	.size	_MEM_6270A_SR, 4
+_MEM_6270A_SR:
+	.long	-2147482624
+	.global _currentvid
+	.section .sdata,"aw"
+	.align 2
+	.type	_currentvid, @object
+	.size	_currentvid, 4
+_currentvid:
+	.long	-1
+	.scomm	_mainfreq,4,4
+	.global _sinLUT
+	.section .data
+	.align 2
+	.type	_sinLUT, @object
+	.size	_sinLUT, 1440
+_sinLUT:
+	.long	0
+	.long	4
+	.long	8
+	.long	13
+	.long	17
+	.long	22
+	.long	26
+	.long	31
+	.long	35
+	.long	40
+	.long	44
+	.long	48
+	.long	53
+	.long	57
+	.long	61
+	.long	66
+	.long	70
+	.long	74
+	.long	79
+	.long	83
+	.long	87
+	.long	91
+	.long	95
+	.long	100
+	.long	104
+	.long	108
+	.long	112
+	.long	116
+	.long	120
+	.long	124
+	.long	128
+	.long	131
+	.long	135
+	.long	139
+	.long	143
+	.long	146
+	.long	150
+	.long	154
+	.long	157
+	.long	161
+	.long	164
+	.long	167
+	.long	171
+	.long	174
+	.long	177
+	.long	181
+	.long	184
+	.long	187
+	.long	190
+	.long	193
+	.long	196
+	.long	198
+	.long	201
+	.long	204
+	.long	207
+	.long	209
+	.long	212
+	.long	214
+	.long	217
+	.long	219
+	.long	221
+	.long	223
+	.long	226
+	.long	228
+	.long	230
+	.long	232
+	.long	233
+	.long	235
+	.long	237
+	.long	238
+	.long	240
+	.long	242
+	.long	243
+	.long	244
+	.long	246
+	.long	247
+	.long	248
+	.long	249
+	.long	250
+	.long	251
+	.long	252
+	.long	252
+	.long	253
+	.long	254
+	.long	254
+	.long	255
+	.long	255
+	.long	255
+	.long	255
+	.long	255
+	.long	256
+	.long	255
+	.long	255
+	.long	255
+	.long	255
+	.long	255
+	.long	254
+	.long	254
+	.long	253
+	.long	252
+	.long	252
+	.long	251
+	.long	250
+	.long	249
+	.long	248
+	.long	247
+	.long	246
+	.long	244
+	.long	243
+	.long	242
+	.long	240
+	.long	238
+	.long	237
+	.long	235
+	.long	233
+	.long	232
+	.long	230
+	.long	228
+	.long	226
+	.long	223
+	.long	221
+	.long	219
+	.long	217
+	.long	214
+	.long	212
+	.long	209
+	.long	207
+	.long	204
+	.long	201
+	.long	198
+	.long	196
+	.long	193
+	.long	190
+	.long	187
+	.long	184
+	.long	181
+	.long	177
+	.long	174
+	.long	171
+	.long	167
+	.long	164
+	.long	161
+	.long	157
+	.long	154
+	.long	150
+	.long	146
+	.long	143
+	.long	139
+	.long	135
+	.long	131
+	.long	128
+	.long	124
+	.long	120
+	.long	116
+	.long	112
+	.long	108
+	.long	104
+	.long	100
+	.long	95
+	.long	91
+	.long	87
+	.long	83
+	.long	79
+	.long	74
+	.long	70
+	.long	66
+	.long	61
+	.long	57
+	.long	53
+	.long	48
+	.long	44
+	.long	40
+	.long	35
+	.long	31
+	.long	26
+	.long	22
+	.long	17
+	.long	13
+	.long	8
+	.long	4
+	.long	0
+	.long	-4
+	.long	-8
+	.long	-13
+	.long	-17
+	.long	-22
+	.long	-26
+	.long	-31
+	.long	-35
+	.long	-40
+	.long	-44
+	.long	-48
+	.long	-53
+	.long	-57
+	.long	-61
+	.long	-66
+	.long	-70
+	.long	-74
+	.long	-79
+	.long	-83
+	.long	-87
+	.long	-91
+	.long	-95
+	.long	-100
+	.long	-104
+	.long	-108
+	.long	-112
+	.long	-116
+	.long	-120
+	.long	-124
+	.long	-127
+	.long	-131
+	.long	-135
+	.long	-139
+	.long	-143
+	.long	-146
+	.long	-150
+	.long	-154
+	.long	-157
+	.long	-161
+	.long	-164
+	.long	-167
+	.long	-171
+	.long	-174
+	.long	-177
+	.long	-181
+	.long	-184
+	.long	-187
+	.long	-190
+	.long	-193
+	.long	-196
+	.long	-198
+	.long	-201
+	.long	-204
+	.long	-207
+	.long	-209
+	.long	-212
+	.long	-214
+	.long	-217
+	.long	-219
+	.long	-221
+	.long	-223
+	.long	-226
+	.long	-228
+	.long	-230
+	.long	-232
+	.long	-233
+	.long	-235
+	.long	-237
+	.long	-238
+	.long	-240
+	.long	-242
+	.long	-243
+	.long	-244
+	.long	-246
+	.long	-247
+	.long	-248
+	.long	-249
+	.long	-250
+	.long	-251
+	.long	-252
+	.long	-252
+	.long	-253
+	.long	-254
+	.long	-254
+	.long	-255
+	.long	-255
+	.long	-255
+	.long	-255
+	.long	-255
+	.long	-256
+	.long	-255
+	.long	-255
+	.long	-255
+	.long	-255
+	.long	-255
+	.long	-254
+	.long	-254
+	.long	-253
+	.long	-252
+	.long	-252
+	.long	-251
+	.long	-250
+	.long	-249
+	.long	-248
+	.long	-247
+	.long	-246
+	.long	-244
+	.long	-243
+	.long	-242
+	.long	-240
+	.long	-238
+	.long	-237
+	.long	-235
+	.long	-233
+	.long	-232
+	.long	-230
+	.long	-228
+	.long	-226
+	.long	-223
+	.long	-221
+	.long	-219
+	.long	-217
+	.long	-214
+	.long	-212
+	.long	-209
+	.long	-207
+	.long	-204
+	.long	-201
+	.long	-198
+	.long	-196
+	.long	-193
+	.long	-190
+	.long	-187
+	.long	-184
+	.long	-181
+	.long	-177
+	.long	-174
+	.long	-171
+	.long	-167
+	.long	-164
+	.long	-161
+	.long	-157
+	.long	-154
+	.long	-150
+	.long	-146
+	.long	-143
+	.long	-139
+	.long	-135
+	.long	-131
+	.long	-128
+	.long	-124
+	.long	-120
+	.long	-116
+	.long	-112
+	.long	-108
+	.long	-104
+	.long	-100
+	.long	-95
+	.long	-91
+	.long	-87
+	.long	-83
+	.long	-79
+	.long	-74
+	.long	-70
+	.long	-66
+	.long	-61
+	.long	-57
+	.long	-53
+	.long	-48
+	.long	-44
+	.long	-40
+	.long	-35
+	.long	-31
+	.long	-26
+	.long	-22
+	.long	-17
+	.long	-13
+	.long	-8
+	.long	-4
+	.global _cosLUT
+	.align 2
+	.type	_cosLUT, @object
+	.size	_cosLUT, 1440
+_cosLUT:
+	.long	256
+	.long	255
+	.long	255
+	.long	255
+	.long	255
+	.long	255
+	.long	254
+	.long	254
+	.long	253
+	.long	252
+	.long	252
+	.long	251
+	.long	250
+	.long	249
+	.long	248
+	.long	247
+	.long	246
+	.long	244
+	.long	243
+	.long	242
+	.long	240
+	.long	238
+	.long	237
+	.long	235
+	.long	233
+	.long	232
+	.long	230
+	.long	228
+	.long	226
+	.long	223
+	.long	221
+	.long	219
+	.long	217
+	.long	214
+	.long	212
+	.long	209
+	.long	207
+	.long	204
+	.long	201
+	.long	198
+	.long	196
+	.long	193
+	.long	190
+	.long	187
+	.long	184
+	.long	181
+	.long	177
+	.long	174
+	.long	171
+	.long	167
+	.long	164
+	.long	161
+	.long	157
+	.long	154
+	.long	150
+	.long	146
+	.long	143
+	.long	139
+	.long	135
+	.long	131
+	.long	127
+	.long	124
+	.long	120
+	.long	116
+	.long	112
+	.long	108
+	.long	104
+	.long	100
+	.long	95
+	.long	91
+	.long	87
+	.long	83
+	.long	79
+	.long	74
+	.long	70
+	.long	66
+	.long	61
+	.long	57
+	.long	53
+	.long	48
+	.long	44
+	.long	40
+	.long	35
+	.long	31
+	.long	26
+	.long	22
+	.long	17
+	.long	13
+	.long	8
+	.long	4
+	.long	0
+	.long	-4
+	.long	-8
+	.long	-13
+	.long	-17
+	.long	-22
+	.long	-26
+	.long	-31
+	.long	-35
+	.long	-40
+	.long	-44
+	.long	-48
+	.long	-53
+	.long	-57
+	.long	-61
+	.long	-66
+	.long	-70
+	.long	-74
+	.long	-79
+	.long	-83
+	.long	-87
+	.long	-91
+	.long	-95
+	.long	-100
+	.long	-104
+	.long	-108
+	.long	-112
+	.long	-116
+	.long	-120
+	.long	-124
+	.long	-128
+	.long	-131
+	.long	-135
+	.long	-139
+	.long	-143
+	.long	-146
+	.long	-150
+	.long	-154
+	.long	-157
+	.long	-161
+	.long	-164
+	.long	-167
+	.long	-171
+	.long	-174
+	.long	-177
+	.long	-181
+	.long	-184
+	.long	-187
+	.long	-190
+	.long	-193
+	.long	-196
+	.long	-198
+	.long	-201
+	.long	-204
+	.long	-207
+	.long	-209
+	.long	-212
+	.long	-214
+	.long	-217
+	.long	-219
+	.long	-221
+	.long	-223
+	.long	-226
+	.long	-228
+	.long	-230
+	.long	-232
+	.long	-233
+	.long	-235
+	.long	-237
+	.long	-238
+	.long	-240
+	.long	-242
+	.long	-243
+	.long	-244
+	.long	-246
+	.long	-247
+	.long	-248
+	.long	-249
+	.long	-250
+	.long	-251
+	.long	-252
+	.long	-252
+	.long	-253
+	.long	-254
+	.long	-254
+	.long	-255
+	.long	-255
+	.long	-255
+	.long	-255
+	.long	-255
+	.long	-256
+	.long	-255
+	.long	-255
+	.long	-255
+	.long	-255
+	.long	-255
+	.long	-254
+	.long	-254
+	.long	-253
+	.long	-252
+	.long	-252
+	.long	-251
+	.long	-250
+	.long	-249
+	.long	-248
+	.long	-247
+	.long	-246
+	.long	-244
+	.long	-243
+	.long	-242
+	.long	-240
+	.long	-238
+	.long	-237
+	.long	-235
+	.long	-233
+	.long	-232
+	.long	-230
+	.long	-228
+	.long	-226
+	.long	-223
+	.long	-221
+	.long	-219
+	.long	-217
+	.long	-214
+	.long	-212
+	.long	-209
+	.long	-207
+	.long	-204
+	.long	-201
+	.long	-198
+	.long	-196
+	.long	-193
+	.long	-190
+	.long	-187
+	.long	-184
+	.long	-181
+	.long	-177
+	.long	-174
+	.long	-171
+	.long	-167
+	.long	-164
+	.long	-161
+	.long	-157
+	.long	-154
+	.long	-150
+	.long	-146
+	.long	-143
+	.long	-139
+	.long	-135
+	.long	-131
+	.long	-127
+	.long	-124
+	.long	-120
+	.long	-116
+	.long	-112
+	.long	-108
+	.long	-104
+	.long	-100
+	.long	-95
+	.long	-91
+	.long	-87
+	.long	-83
+	.long	-79
+	.long	-74
+	.long	-70
+	.long	-66
+	.long	-61
+	.long	-57
+	.long	-53
+	.long	-48
+	.long	-44
+	.long	-40
+	.long	-35
+	.long	-31
+	.long	-26
+	.long	-22
+	.long	-17
+	.long	-13
+	.long	-8
+	.long	-4
+	.long	0
+	.long	4
+	.long	8
+	.long	13
+	.long	17
+	.long	22
+	.long	26
+	.long	31
+	.long	35
+	.long	40
+	.long	44
+	.long	48
+	.long	53
+	.long	57
+	.long	61
+	.long	66
+	.long	70
+	.long	74
+	.long	79
+	.long	83
+	.long	87
+	.long	91
+	.long	95
+	.long	100
+	.long	104
+	.long	108
+	.long	112
+	.long	116
+	.long	120
+	.long	124
+	.long	127
+	.long	131
+	.long	135
+	.long	139
+	.long	143
+	.long	146
+	.long	150
+	.long	154
+	.long	157
+	.long	161
+	.long	164
+	.long	167
+	.long	171
+	.long	174
+	.long	177
+	.long	181
+	.long	184
+	.long	187
+	.long	190
+	.long	193
+	.long	196
+	.long	198
+	.long	201
+	.long	204
+	.long	207
+	.long	209
+	.long	212
+	.long	214
+	.long	217
+	.long	219
+	.long	221
+	.long	223
+	.long	226
+	.long	228
+	.long	230
+	.long	232
+	.long	233
+	.long	235
+	.long	237
+	.long	238
+	.long	240
+	.long	242
+	.long	243
+	.long	244
+	.long	246
+	.long	247
+	.long	248
+	.long	249
+	.long	250
+	.long	251
+	.long	252
+	.long	252
+	.long	253
+	.long	254
+	.long	254
+	.long	255
+	.long	255
+	.long	255
+	.long	255
+	.long	255
+	.ident	"GCC: (GNU) 4.9.4"
