@@ -34,8 +34,8 @@ $(CD_OBJECTS): .FORCE lbas.h
 	$(OBJCOPY) -O binary $< $@
 cd: $(TARGETS)
 	bincat out.bin lbas.h $(BIN_TARGET) $(ADD_FILES)
-	make cdclean -C .
-	make all -C .
+	make -f Makefile.pcfx cdclean -C .
+	make -f Makefile.pcfx all -C .
 	bincat out.bin lbas.h $(BIN_TARGET) $(ADD_FILES)
 	pcfx-cdlink cdlink.txt $(CDOUT)
 
