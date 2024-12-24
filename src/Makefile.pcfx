@@ -1,6 +1,6 @@
 SRCDIR		= ./src
 VPATH		= $(SRCDIR)
-SRC_C		= src/font_drawing.c src/pcfx.c src/common.c src/main.c
+SRC_C		= src/font_drawing_pcfx.c src/pcfx.c src/common.c src/main.c
 SRC_S		= src/font.s src/fastking.s
 OBJ_C		= $(notdir $(patsubst %.c, %.o, $(SRC_C)))
 OBJ_S		= $(notdir $(patsubst %.s, %.o, $(SRC_S)))

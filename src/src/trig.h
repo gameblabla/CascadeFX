@@ -1,7 +1,7 @@
 #ifndef TRIGONOMETRY_LOOKUP_H
 #define TRIGONOMETRY_LOOKUP_H
 
-int16_t sin_lookup[256] = {
+int32_t sin_lookup[256] = {
     0,
     6,
     12,
@@ -260,7 +260,7 @@ int16_t sin_lookup[256] = {
     -6
 };
 
-int16_t cos_lookup[256] = {
+int32_t cos_lookup[256] = {
     256,
     255,
     255,

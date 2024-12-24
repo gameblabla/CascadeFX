@@ -17,7 +17,7 @@ void initialize_trigonometry() {
     printf("#ifndef TRIGONOMETRY_LOOKUP_H\n");
     printf("#define TRIGONOMETRY_LOOKUP_H\n\n");
 
-    printf("int16_t sin_lookup[%d] = {\n", ANGLE_MAX);
+    printf("int32_t sin_lookup[%d] = {\n", ANGLE_MAX);
     for (int angle = 0; angle < ANGLE_MAX; angle++) {
         double radians = angle * 2.0 * M_PI / ANGLE_MAX;
         sin_lookup[angle] = (int32_t)(FIXED_POINT_SCALE * sin(radians));
@@ -29,7 +29,7 @@ void initialize_trigonometry() {
     }
     printf("};\n\n");
 
-    printf("int16_t cos_lookup[%d] = {\n", ANGLE_MAX);
+    printf("int32_t cos_lookup[%d] = {\n", ANGLE_MAX);
     for (int angle = 0; angle < ANGLE_MAX; angle++) {
         cos_lookup[angle] = (int32_t)(FIXED_POINT_SCALE * cos(angle * 2.0 * M_PI / ANGLE_MAX));
         printf("    %d", cos_lookup[angle]);

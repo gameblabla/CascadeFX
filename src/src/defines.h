@@ -14,7 +14,7 @@
 #define SCREEN_HEIGHT 240
 
 // Fixed-point arithmetic settings
-#define FIXED_POINT_SHIFT 16
+#define FIXED_POINT_SHIFT 8
 #define INT_TO_FIXED(x) ((x) << FIXED_POINT_SHIFT)
 #define FIXED_TO_INT(x) ((x) >> FIXED_POINT_SHIFT)
 
