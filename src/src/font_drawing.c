@@ -4,8 +4,10 @@
 #include "font_drawing.h"
 #include "font_menudata.h"
 
-#define HOST_WIDTH_RESOLUTION 256
-#define HOST_HEIGHT_RESOLUTION 240
+#include "defines.h"
+
+#define HOST_WIDTH_RESOLUTION SCREEN_WIDTH
+#define HOST_HEIGHT_RESOLUTION SCREEN_HEIGHT
 
 #define setPixel(buffer, x,y,c) *((uint8_t* restrict)buffer + ((x) + (y) * HOST_WIDTH_RESOLUTION)) = c;
 

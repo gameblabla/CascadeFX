@@ -5,6 +5,18 @@
 #define UNIX 2 
 #define CASLOOPY 3
 
+#if PLATFORM == UNIX
+
+// Base screen dimensions for scaling
+#define BASE_SCREEN_WIDTH 320
+#define BASE_SCREEN_HEIGHT 240
+
+// Screen dimensions
+#define SCREEN_WIDTH 320
+#define SCREEN_HEIGHT 240
+
+#else
+
 // Base screen dimensions for scaling
 #define BASE_SCREEN_WIDTH 256
 #define BASE_SCREEN_HEIGHT 240
@@ -12,6 +24,8 @@
 // Screen dimensions
 #define SCREEN_WIDTH 256
 #define SCREEN_HEIGHT 240
+
+#endif
 
 // Fixed-point arithmetic settings
 #define FIXED_POINT_SHIFT 8

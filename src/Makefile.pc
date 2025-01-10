@@ -1,0 +1,36 @@
+# Define compiler and flags
+CC = gcc
+CFLAGS ?= -Wall -Wextra -O2 -DPLATFORM=2
+LDFLAGS = -lSDL -lSDL_mixer -lSDL_image -lm
+
+# Define the source and build folders
+SRC_DIR = src
+OBJ_DIR = obj
+BIN_DIR = bin
+
+# Define the target executable
+TARGET = cascadefx.elf
+
+# Collect all .c files in the source folder
+SRC_FILES =  src/main.c src/common.c src/font_drawing_pc.c
+OBJ_FILES =  src/main.o src/common.o src/font_drawing_pc.o
+
+# Default rule
+all: $(TARGET)
+
+# Rule to build the target
+$(TARGET): $(OBJ_FILES)
+	@mkdir -p $(BIN_DIR)
+	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
+
+# Rule to build object files
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+	@mkdir -p $(OBJ_DIR)
+	$(CC) $(CFLAGS) -c $< -o $@
+
+# Clean rule
+clean:
+	rm -rf $(OBJ_FILES)
+
+# Phony targets
+.PHONY: all clean

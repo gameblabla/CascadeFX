@@ -5,7 +5,7 @@
 
 #include "defines.h"
 
-#define CART_AUDIO 1
+//#define CART_AUDIO 1
 #define _16BITS_WRITES
 //#define BIGENDIAN_TEXTURING 1
 //#define FORCE_FULLSCREEN_DRAWS 1
@@ -822,15 +822,9 @@ void spawn_piece() {
     }
 }
 
-#include <stdint.h>
-#include <string.h>
-
-
 Puzzle puzzles[MAX_PUZZLES];
 int current_puzzle_index = 0;
 int puzzle_piece_index = 0;
-
-
 
 // Function to initialize puzzles
 void initialize_puzzles() {
@@ -1478,13 +1472,13 @@ int Init_video_game()
     SDL_FreeSurface(texture_surface);
 
     // Load background images
-    if (!load_background("background256.png", bg_game)) {
+    if (!load_background("background320.png", bg_game)) {
         SDL_Quit();
         return 1;
     }
     
     // Load background images
-    if (!load_background("title.png", bg_title)) {
+    if (!load_background("title320.png", bg_title)) {
         SDL_Quit();
         return 1;
     }
@@ -1983,13 +1977,6 @@ int main()
                 PrintText("Main Programmer : Gameblabla", 16, 32);
                 PrintText("Graphics : SDXL", 16, 48);
                 PrintText("Snds: sfxr.me", 16, 64);
-               
-                PrintText("I'm a proud LGBT man", 16, 80);
-                
-                PrintText("VideoDojo:", 16, 128);
-                PrintText("Pronouns:He/Him", 16, 144);
-                PrintText("I dislike this gay game", 16, 160);
-                PrintText("that you made!!!", 16, 176);
                 
 				if (BUTTON_PRESSED(start_button) || BUTTON_PRESSED(a_button)) {
 					Game_Switch(GAME_STATE_TITLE);

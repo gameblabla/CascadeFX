@@ -2,12 +2,15 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <SDL/SDL.h>
+
+#include "defines.h"
+
 #include "font_drawing.h"
 #include "font_menudata.h"
 
 extern SDL_Surface* screen;
-#define HOST_WIDTH_RESOLUTION screen->w
-#define HOST_HEIGHT_RESOLUTION screen->h
+#define HOST_WIDTH_RESOLUTION SCREEN_WIDTH
+#define HOST_HEIGHT_RESOLUTION SCREEN_HEIGHT
 
 #define setPixel(buffer, x,y,c) *((uint8_t* restrict)buffer + ((x) + (y) * HOST_WIDTH_RESOLUTION)) = c;
 
