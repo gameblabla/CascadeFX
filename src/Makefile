@@ -34,7 +34,7 @@ OBJDIR = ./obj
 ROM    = ./rom.bin
 
 # Basic compile options
-OPTIMIZE = -O2 -flto -Wvla
+OPTIMIZE = -Ofast -flto -Wvla
 LIBS =
 
 # Below here probably doesn't need to be touched
@@ -48,7 +48,7 @@ SRCS_S = src/header.s src/startup.s
 OBJS_S = $(patsubst $(SRCDIR)/%.s,$(OBJDIR)/%.o,$(SRCS_S))
 
 CFLAGS  = $(OPTIMIZE)
-CFLAGS += -m1 -mrenesas -DPLATFORM=3 -DHARDWARE_DIV=1
+CFLAGS += -m1 -mrenesas -DPLATFORM=3 -DHARDWARE_DIV=1 -DBY16_MUL=1
 CFLAGS += -ffreestanding
 CFLAGS += -falign-functions=4 -ffunction-sections -fdata-sections
 CFLAGS += -fomit-frame-pointer -fno-asynchronous-unwind-tables -fno-unwind-tables

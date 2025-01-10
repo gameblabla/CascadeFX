@@ -11,8 +11,6 @@
 #include "titlemusic.h"
 #include "gamemusic.h"
 
-#include "gamepal.h"
-
 #define PALETTE_SIZE 256 // Assuming a palette of 256 colors
 #define FADE_STEPS 31 // Define the number of steps for the fade effect
 
@@ -37,7 +35,7 @@ volatile void (*const BiosSoundChannels)(int) = (void (*)(int))0x6AC0;
 volatile void (*const BiosSoundVolume)(int, int) = (void (*)(int, int))0x6B50;
 volatile void (*const BiosPlayBGM)(void*, int, int, void**) = (void (*)(void*, int, int, void**))0x61A0;
 
-void Init_Video_Game()
+void Init_Video_Game(unsigned short* colors)
 {
 
 	*biosSoundState = &soundState[0];
@@ -83,7 +81,7 @@ void Init_Video_Game()
 	VDP_BMn_HEIGHT[0] = 511;
 
 	for(unsigned int i = 0; i < 256; i++){
-		VDP_PALETTE[i] = gamepal[i];
+		VDP_PALETTE[i] = colors[i];
 	}
 	
 	
@@ -150,19 +148,19 @@ void *memset(void *dest, int c, size_t n){
 }
 
 // Function to fade in from black to the target palette
-void fadeInPalette(int colors) {
+void fadeInPalette(unsigned short* colors) {
     // Gradually fade in 'gamepal' over FADE_STEPS
     for (int step = 1; step <= FADE_STEPS; step++) {
         for (unsigned int i = 0; i < PALETTE_SIZE; i++) {
             // Extract RGB components from 'gamepal[i]' (RGB555 format)
-            uint8_t redTarget = (gamepal[i] >> 10) & 0x1F;
-            uint8_t greenTarget = (gamepal[i] >> 5) & 0x1F;
-            uint8_t blueTarget = gamepal[i] & 0x1F;
+            uint16_t redTarget = (colors[i] >> 10) & 0x1F;
+            uint16_t greenTarget = (colors[i] >> 5) & 0x1F;
+            uint16_t blueTarget = colors[i] & 0x1F;
 
             // Calculate the fade for each color component based on the current step
-            uint8_t red = (redTarget * step) / FADE_STEPS;
-            uint8_t green = (greenTarget * step) / FADE_STEPS;
-            uint8_t blue = (blueTarget * step) / FADE_STEPS;
+            uint16_t red = (redTarget * step) / FADE_STEPS;
+            uint16_t green = (greenTarget * step) / FADE_STEPS;
+            uint16_t blue = (blueTarget * step) / FADE_STEPS;
 
             // Combine components back into a single RGB555 color value
             uint16_t color = (red << 10) | (green << 5) | blue;
@@ -177,19 +175,19 @@ void fadeInPalette(int colors) {
 }
 
 // Function to fade out from the source palette to black
-void fadeOutPalette(int colors) {
+void fadeOutPalette(unsigned short* colors) {
     // Gradually fade out 'gamepal' to black over FADE_STEPS
     for (int step = 1; step <= FADE_STEPS; step++) {
         for (unsigned int i = 0; i < PALETTE_SIZE; i++) {
             // Extract RGB components from 'gamepal[i]' (RGB555 format)
-            uint8_t red = (gamepal[i] >> 10) & 0x1F;
-            uint8_t green = (gamepal[i] >> 5) & 0x1F;
-            uint8_t blue = gamepal[i] & 0x1F;
+            uint16_t red = (colors[i] >> 10) & 0x1F;
+            uint16_t green = (colors[i] >> 5) & 0x1F;
+            uint16_t blue = colors[i] & 0x1F;
 
             // Calculate the fade for each color component based on the current step
-            uint8_t redFade = (red * (FADE_STEPS - step)) / FADE_STEPS;
-            uint8_t greenFade = (green * (FADE_STEPS - step)) / FADE_STEPS;
-            uint8_t blueFade = (blue * (FADE_STEPS - step)) / FADE_STEPS;
+            uint16_t redFade = (red * (FADE_STEPS - step)) / FADE_STEPS;
+            uint16_t greenFade = (green * (FADE_STEPS - step)) / FADE_STEPS;
+            uint16_t blueFade = (blue * (FADE_STEPS - step)) / FADE_STEPS;
 
             // Combine components back into a single RGB555 color value
             uint16_t color = (redFade << 10) | (greenFade << 5) | blueFade;

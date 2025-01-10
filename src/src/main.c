@@ -42,13 +42,13 @@ void Empty_Palette() {};
 #include "explosion.h"
 #include "readysfx.h"
 
-#include "gamepal.h"
 #include "bg.h"
 #include "textures.h"
 #include "title.h"
 
 #endif
 
+#include "gamepal.h"
 #include "font_drawing.h"
 #include "common.h"
 #include "trig.h"
@@ -127,13 +127,15 @@ SDL_Surface* texture_surface;
 
 int16_t framebuffer_game[256*240/2];
 
+#define BY16_MUL 1
+
 #define BIGENDIAN_TEXTURING 1
 
 #define GAME_FRAMEBUFFER framebuffer_game
 #define REFRESH_SCREEN(index, length) CopyFrameBuffer((int*) framebuffer_game, (int*) VDP_BITMAP_VRAM ); \
         BiosVsync();
 
-#define DEFAULT_INTERVAL 500
+#define DEFAULT_INTERVAL 40
 
 #define PLAY_SFX(channel, index)
 
@@ -255,7 +257,7 @@ static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D 
     if ((points + 2)->y < min_y) min_y = (points + 2)->y; else if ((points + 2)->y > max_y) max_y = (points + 2)->y;
     if ((points + 3)->y < min_y) min_y = (points + 3)->y; else if ((points + 3)->y > max_y) max_y = (points + 3)->y;
     
-	//if (min_y <= 0) min_y = 0;
+	if (min_y <= 0) min_y = 0;
 	//if (max_y >= SCREEN_HEIGHT) max_y = SCREEN_HEIGHT;
 	
     EdgeData edges_array[4];
@@ -1401,7 +1403,7 @@ int Init_video_game()
 	
 	cd_pausectrl(0);
 #elif PLATFORM == CASLOOPY
-	Init_Video_Game();
+	Init_Video_Game(gamepal);
 
 	
 #else

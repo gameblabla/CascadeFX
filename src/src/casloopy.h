@@ -14,7 +14,7 @@
 #define FADE_STEPS 31 // Define the number of steps for the fade effect
 
 extern void PlayMusic(int i);
-extern void Init_Video_Game();
+extern void Init_Video_Game(unsigned short* colors);
 
 extern volatile void (*BiosVsync)(void);
 extern void Empty_Palette();
@@ -48,8 +48,8 @@ static inline void CopyFrameBuffer(int* source, int* destination)
 }
 
 // Function to fade in from black to pict6pal
-extern void fadeInPalette( int colors);
+extern void fadeInPalette( unsigned short* colors);
 // Function to fade out from pict6pal to black
-extern void fadeOutPalette(int colors);
+extern void fadeOutPalette(unsigned short* colors);
 
 #endif

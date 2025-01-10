@@ -1,11 +1,11 @@
 
 // Helper function to fetch the texture color
 static inline uint32_t fetchTextureColor(int32_t u, int32_t v, int tetromino_type) {
-    uint8_t tex_u = ((u >> 8) & 31);
-    uint8_t tex_v_full = ((v >> 8) & 31);
-    bool is_brighter = tex_v_full >= 16;
-    uint8_t local_v = tex_v_full & 0x0F;
-    int tile_index = tetromino_type * 2 + (is_brighter ? 1 : 0);
+    int32_t tex_u = ((u >> 8) & 31);
+    int32_t tex_v_full = ((v >> 8) & 31);
+    int32_t is_brighter = tex_v_full >= 16;
+    int32_t local_v = tex_v_full & 0x0F;
+    int32_t tile_index = tetromino_type * 2 + (is_brighter ? 1 : 0);
     //if (tile_index >= 14) tile_index = 0;
 #if defined(_16BITS_WRITES)
     // Since texture is stored as uint16_t but contains 8-bit values, we access it as uint16_t*
@@ -37,13 +37,13 @@ static inline void drawScanline(int32_t xs, int32_t xe, int32_t u, int32_t v,
     int32_t x = xs;
 
     // Handle odd starting pixel
-    if (x & 1) {
+   /* if (x & 1) {
         int32_t color = fetchTextureColor(u, v, tetromino_type);
         *fb_ptr8++ = (uint8_t)color;
         x++;
         u += du;
         v += dv;
-    }
+    }*/
 
     // Now x is even; proceed with 16-bit writes
     uint16_t *fb_ptr16 = (uint16_t*)fb_ptr8;
@@ -65,12 +65,12 @@ static inline void drawScanline(int32_t xs, int32_t xe, int32_t u, int32_t v,
     }
 
     // Handle remaining pixel if any
-    if (num_pixels & 1) {
+    /*if (num_pixels & 1) {
         int32_t color = fetchTextureColor(u, v, tetromino_type);
         u += du;
         v += dv;
         fb_ptr8 = (uint8_t*)fb_ptr16;
         *fb_ptr8 = (uint8_t)color;
-    }
+    }*/
 #endif
 }

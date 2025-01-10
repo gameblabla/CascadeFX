@@ -1,6 +1,8 @@
 #ifndef TRIG_LUT_H
 #define TRIG_LUT_H
 
+// Internal, not used for game !
+
 int cosLUT[360] = {
     256,
     255,
