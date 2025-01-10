@@ -37,13 +37,13 @@ static inline void drawScanline(int32_t xs, int32_t xe, int32_t u, int32_t v,
     int32_t x = xs;
 
     // Handle odd starting pixel
-    if (x & 1) {
+    /*if (x & 1) {
         int32_t color = fetchTextureColor(u, v, tetromino_type);
         *fb_ptr8++ = (uint8_t)color;
         x++;
         u += du;
         v += dv;
-    }
+    }*/
 
     // Now x is even; proceed with 16-bit writes
     uint16_t *fb_ptr16 = (uint16_t*)fb_ptr8;
@@ -65,12 +65,12 @@ static inline void drawScanline(int32_t xs, int32_t xe, int32_t u, int32_t v,
     }
 
     // Handle remaining pixel if any
-    if (num_pixels & 1) {
+    /*if (num_pixels & 1) {
         int32_t color = fetchTextureColor(u, v, tetromino_type);
         u += du;
         v += dv;
         fb_ptr8 = (uint8_t*)fb_ptr16;
         *fb_ptr8 = (uint8_t)color;
-    }
+    }*/
 #endif
 }
