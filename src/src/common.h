@@ -34,7 +34,7 @@ typedef struct {
 	int32_t v, v_step;
 } EdgeData;
 
-#define DIV_TAB_SIZE 4096
+#define DIV_TAB_SIZE 512
 #define DIV_TAB_HALF DIV_TAB_SIZE/2
 #define DIV_TAB_SHIFT 16
 extern int divTab[DIV_TAB_SIZE];
