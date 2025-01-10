@@ -5,7 +5,7 @@
 
 #include "defines.h"
 
-//#define CART_AUDIO 1
+#define CART_AUDIO 1
 #define _16BITS_WRITES
 //#define BIGENDIAN_TEXTURING 1
 //#define FORCE_FULLSCREEN_DRAWS 1
@@ -133,7 +133,7 @@ int16_t framebuffer_game[256*240/2];
 #define REFRESH_SCREEN(index, length) CopyFrameBuffer((int*) framebuffer_game, (int*) VDP_BITMAP_VRAM ); \
         BiosVsync();
 
-#define DEFAULT_INTERVAL 500
+#define DEFAULT_INTERVAL 40
 
 #define PLAY_SFX(channel, index)
 
@@ -255,7 +255,7 @@ static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D 
     if ((points + 2)->y < min_y) min_y = (points + 2)->y; else if ((points + 2)->y > max_y) max_y = (points + 2)->y;
     if ((points + 3)->y < min_y) min_y = (points + 3)->y; else if ((points + 3)->y > max_y) max_y = (points + 3)->y;
     
-	//if (min_y <= 0) min_y = 0;
+	if (min_y <= 0) min_y = 0;
 	//if (max_y >= SCREEN_HEIGHT) max_y = SCREEN_HEIGHT;
 	
     EdgeData edges_array[4];
