@@ -48,7 +48,7 @@ SRCS_S = src/header.s src/startup.s
 OBJS_S = $(patsubst $(SRCDIR)/%.s,$(OBJDIR)/%.o,$(SRCS_S))
 
 CFLAGS  = $(OPTIMIZE)
-CFLAGS += -m1 -mrenesas -DPLATFORM=3 -DHARDWARE_DIV=1
+CFLAGS += -m1 -mrenesas -DPLATFORM=3 -DHARDWARE_DIV=1 -DBY16=1 -fbuiltin
 CFLAGS += -ffreestanding
 CFLAGS += -falign-functions=4 -ffunction-sections -fdata-sections
 CFLAGS += -fomit-frame-pointer -fno-asynchronous-unwind-tables -fno-unwind-tables
@@ -59,7 +59,7 @@ CXXFLAGS = -std=c++23 -fno-exceptions -fno-non-call-exceptions -fno-rtti -fno-th
 SIZEDEFS  = -Wl,--defsym=SRAMSIZE=$(SRAMSIZE)
 SIZEDEFS += -Wl,--defsym=STACKSIZE=$(STACKSIZE)
 
-LDFLAGS  = -nostartfiles -nolibc -Wl,--gc-sections -Wl,--as-needed -flto -Wl,--no-warn-rwx-segment -Wl,--orphan-handling=error -Wl,--print-memory-usage
+LDFLAGS  = -nostartfiles -lgcc -Wl,--gc-sections -Wl,--as-needed -flto -Wl,--no-warn-rwx-segment -Wl,--orphan-handling=error -Wl,--print-memory-usage
 LDFLAGS += $(SIZEDEFS) -Wl,-T $(LDSCRIPT) $(LIBS) -s
 
 .PHONY: clean rom

@@ -27,16 +27,6 @@ size_t strlen(const char *str) {
     return s - str;
 }
 
-void *memcpy(void *restrict dest, const void *restrict src, size_t n){
-	unsigned char *d = dest;
-	const unsigned char *s = src;
-	
-	for(; n; n--){
-		*d++ = *s++;
-	}
-	return dest;
-}
-
 void memcpy32(void *dest, const void *src, size_t n) {
     uint32_t *d = (uint32_t*)dest;
     const uint32_t *s = (const uint32_t*)src;

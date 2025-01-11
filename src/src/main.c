@@ -19,6 +19,10 @@
 #include <string.h>
 #include <stddef.h>
 
+#include "common.h"
+
+extern void *   memcpy (void *__restrict, const void *__restrict, size_t);;
+
 #if PLATFORM == UNIX
 #include <SDL/SDL.h>
 #include <SDL/SDL_image.h>
@@ -27,8 +31,8 @@ uint8_t gamepal[768];
 #define FPS_VIDEO 60
 const float real_FPS = 1000/FPS_VIDEO;
 
-void fadeInPalette(unsigned char pal[], int sizep){};
-void fadeOutPalette(unsigned char pal[], int sizep){};
+void fadeInPalette(unsigned char pal[], DEFAULT_INT sizep){};
+void fadeOutPalette(unsigned char pal[], DEFAULT_INT sizep){};
 void Empty_Palette() {};
 #endif
 
@@ -50,7 +54,7 @@ void Empty_Palette() {};
 #endif
 
 #include "font_drawing.h"
-#include "common.h"
+
 #include "trig.h"
 
 
@@ -75,6 +79,8 @@ void Empty_Palette() {};
 
 #if PLATFORM == NECPCFX
 
+#define FB_SIZE 1 // 1 for 16bpp, 2 for 8bpp sized framebuffer. it needs double because of indexing
+
 #define BIGENDIAN_TEXTURING 1
 
 #define GAME_FRAMEBUFFER framebuffer_game
@@ -95,6 +101,8 @@ int16_t framebuffer_game[256*240/2];
 #endif
 	
 #elif PLATFORM == UNIX
+
+#define FB_SIZE 1 // 1 for 16bpp, 2 for 8bpp sized framebuffer. it needs double because of indexing
 
 #define FORCE_FULLSCREEN_DRAWS 1
 
@@ -117,6 +125,9 @@ SDL_Surface* screen;
 SDL_Surface* texture_surface;
 
 #elif PLATFORM == CASLOOPY
+
+#define FB_SIZE 1 // 1 for 16bpp, 2 for 8bpp sized framebuffer. it needs double because of indexing
+
 #include "loopy.h"
 #include "casloopy.h"
 
@@ -132,6 +143,82 @@ int16_t framebuffer_game[256*240/2];
 #define GAME_FRAMEBUFFER framebuffer_game
 #define REFRESH_SCREEN(index, length) CopyFrameBuffer((int*) framebuffer_game, (int*) VDP_BITMAP_VRAM ); \
         BiosVsync();
+
+#define DEFAULT_INTERVAL 40
+
+#define PLAY_SFX(channel, index)
+
+#elif PLATFORM == CD32
+
+#define FB_SIZE 2 // 1 for 16bpp, 2 for 8bpp sized framebuffer. it needs double because of indexing
+
+#include "cd32.h"
+
+
+void fadeInPalette(unsigned char pal[], DEFAULT_INT sizep){};
+void fadeOutPalette(unsigned char pal[], DEFAULT_INT sizep){};
+void Empty_Palette() {};
+
+const unsigned char gamepal[768] = {
+	0x08, 0x08, 0x0b, 0x0a, 0xe3, 0x5b, 0x00, 0xf1, 0x92, 0x02, 0xfa, 0x5d, 0x0e, 0x0e, 0x15, 0x1c, 
+	0x1d, 0x2a, 0x22, 0x2a, 0x43, 0x0e, 0xd6, 0x89, 0x16, 0xff, 0x6d, 0x0e, 0xff, 0xb2, 0x1d, 0x0b, 
+	0x0a, 0x15, 0x14, 0x1c, 0x19, 0x19, 0x24, 0x1b, 0x21, 0x34, 0x23, 0x34, 0x5a, 0x21, 0x3c, 0x6c, 
+	0x13, 0xd1, 0x5a, 0x22, 0x21, 0x2c, 0x20, 0x26, 0x3b, 0x28, 0x32, 0x4a, 0x22, 0x3c, 0x5f, 0x28, 
+	0x42, 0x6e, 0x2e, 0x48, 0x76, 0x21, 0xb7, 0x59, 0x1f, 0xff, 0xc4, 0x25, 0x24, 0x33, 0x29, 0x28, 
+	0x36, 0x2c, 0x40, 0x62, 0x37, 0x53, 0x80, 0x32, 0x5d, 0x8c, 0x28, 0xa0, 0x56, 0x26, 0xb5, 0x81, 
+	0x30, 0x1c, 0x19, 0x2c, 0x2b, 0x3b, 0x32, 0x2f, 0x3f, 0x3b, 0x2f, 0x2f, 0x2b, 0x38, 0x54, 0x2f, 
+	0x3e, 0x5c, 0x35, 0x44, 0x63, 0x2f, 0x64, 0x71, 0x38, 0x67, 0x98, 0x3b, 0x70, 0xa1, 0x2c, 0x90, 
+	0x52, 0x30, 0x76, 0x66, 0x3c, 0x80, 0xaf, 0x30, 0x90, 0x79, 0x41, 0x9a, 0xc0, 0x48, 0x1c, 0x12, 
+	0x37, 0x38, 0x57, 0x34, 0x32, 0x44, 0x39, 0x37, 0x48, 0x35, 0x3b, 0x64, 0x36, 0x48, 0x68, 0x36, 
+	0x5d, 0x42, 0x31, 0x60, 0x5d, 0x41, 0x61, 0x8b, 0x32, 0x9c, 0x7c, 0x54, 0xb8, 0xce, 0x45, 0x40, 
+	0x4e, 0x3a, 0x4c, 0x6c, 0x3e, 0x51, 0x71, 0x47, 0x55, 0x72, 0x47, 0x73, 0x9c, 0x3f, 0x81, 0x90, 
+	0x49, 0x7b, 0xa2, 0x4f, 0x3a, 0x3b, 0x49, 0x37, 0x59, 0x46, 0x45, 0x63, 0x4e, 0x5f, 0x7d, 0x47, 
+	0x6b, 0x95, 0x46, 0x8c, 0x9a, 0x46, 0x87, 0xb4, 0x4d, 0xa6, 0xc6, 0x58, 0xc8, 0xd7, 0x5b, 0x27, 
+	0x1a, 0x5b, 0x34, 0x49, 0x4b, 0x44, 0x57, 0x51, 0x4f, 0x5a, 0x54, 0x70, 0x98, 0x4f, 0x86, 0xaa, 
+	0x50, 0x9b, 0xba, 0x55, 0x9c, 0xaa, 0x56, 0x36, 0x55, 0x68, 0x32, 0x28, 0x5f, 0x5b, 0x82, 0x5c, 
+	0x48, 0x4d, 0x57, 0x44, 0x60, 0x67, 0x55, 0x76, 0x5a, 0x67, 0x87, 0x57, 0x81, 0x9e, 0x5d, 0xb0, 
+	0xc5, 0x5d, 0xd6, 0xe0, 0x69, 0x36, 0x51, 0x62, 0x3b, 0x58, 0x6f, 0x42, 0x30, 0x61, 0x5d, 0x64, 
+	0x68, 0x6b, 0x89, 0x6e, 0x77, 0x92, 0x69, 0x87, 0xa3, 0x61, 0x9a, 0xb3, 0x6a, 0xe5, 0xe5, 0x68, 
+	0x45, 0x5e, 0x6a, 0x4e, 0x28, 0x75, 0x52, 0x4c, 0x6a, 0x68, 0x73, 0x6f, 0xbe, 0xcc, 0x71, 0x24, 
+	0x21, 0x7b, 0x27, 0x43, 0x74, 0x52, 0x68, 0x6f, 0xa9, 0xb9, 0x7b, 0xb5, 0xc0, 0x71, 0xd4, 0xdc, 
+	0x83, 0x2d, 0x19, 0x76, 0x37, 0x50, 0x87, 0x33, 0x4a, 0x79, 0x46, 0x5d, 0x93, 0x65, 0xb5, 0x7d, 
+	0x63, 0x63, 0x7b, 0x5e, 0x76, 0x7a, 0x6e, 0x7c, 0x7e, 0x79, 0x84, 0x82, 0x83, 0x92, 0x83, 0x9b, 
+	0xae, 0x81, 0x3e, 0x52, 0x82, 0x51, 0x35, 0x7f, 0x4c, 0x66, 0x84, 0x61, 0x1f, 0x8c, 0xd0, 0xd6, 
+	0x87, 0x55, 0x6c, 0x88, 0x6f, 0x7b, 0x9f, 0x7f, 0x7e, 0x96, 0x93, 0x9a, 0x91, 0x38, 0x4f, 0xa0, 
+	0x43, 0x29, 0x93, 0x4a, 0x5d, 0x93, 0x63, 0x5d, 0x91, 0x59, 0x74, 0x96, 0x62, 0x3f, 0x95, 0x65, 
+	0x7d, 0x99, 0x70, 0x6e, 0x91, 0x79, 0x81, 0x92, 0x85, 0x89, 0x8c, 0x88, 0x95, 0x99, 0xb2, 0xbc, 
+	0x99, 0x31, 0x47, 0x9f, 0x42, 0x52, 0xa2, 0x92, 0x94, 0xa8, 0x31, 0x47, 0xa5, 0x59, 0x6d, 0xa5, 
+	0x6f, 0x85, 0xae, 0x7c, 0x58, 0xa5, 0x76, 0x71, 0xac, 0x8e, 0x85, 0xa2, 0x9e, 0xa7, 0xab, 0xd1, 
+	0xd5, 0xa8, 0x38, 0x15, 0xb3, 0x59, 0x5f, 0xaa, 0x74, 0x13, 0xad, 0xa7, 0xae, 0xb5, 0xb2, 0xb9, 
+	0xad, 0x1f, 0x0f, 0xb2, 0x45, 0x55, 0xbc, 0x53, 0x35, 0xb5, 0x68, 0x72, 0xbf, 0x6f, 0x62, 0xae, 
+	0x7f, 0x78, 0xb9, 0x8a, 0xd7, 0xba, 0x88, 0x80, 0xb0, 0x9a, 0x96, 0xb8, 0x31, 0x47, 0xb8, 0x3a, 
+	0x0d, 0xb9, 0xa3, 0x90, 0xc0, 0xbb, 0xc1, 0xd2, 0xff, 0x19, 0xc5, 0x1f, 0x06, 0xc0, 0x3d, 0x4f, 
+	0xc5, 0x4c, 0x5b, 0xc8, 0x62, 0x6e, 0xc2, 0x81, 0x09, 0xc1, 0x94, 0x8d, 0xc6, 0x98, 0x7f, 0xc1, 
+	0xa8, 0x9a, 0xcf, 0xbd, 0xa1, 0xd5, 0xd3, 0xd7, 0xc8, 0x30, 0x45, 0xd1, 0x3d, 0x4e, 0xc6, 0x3b, 
+	0x07, 0xce, 0x57, 0x62, 0xd1, 0x79, 0x74, 0xce, 0xa6, 0x87, 0xd8, 0xaa, 0x41, 0xd3, 0xb0, 0xa6, 
+	0xc7, 0xc4, 0xc9, 0xcf, 0xcc, 0xd1, 0xd5, 0x30, 0x45, 0xd1, 0xa3, 0x98, 0xd7, 0xb2, 0x90, 0xd9, 
+	0x23, 0x00, 0xda, 0x46, 0x00, 0xdf, 0x4d, 0x5b, 0xdf, 0x61, 0x66, 0xdc, 0x6e, 0x6a, 0xe1, 0x86, 
+	0x7c, 0xd1, 0x89, 0x03, 0xdc, 0xa4, 0xa5, 0xdf, 0xbd, 0xb2, 0xdc, 0xcd, 0xae, 0xe4, 0xe2, 0xe5, 
+	0xdb, 0x38, 0x49, 0xe5, 0x3d, 0x4d, 0xdc, 0x9b, 0x00, 0xf7, 0x9e, 0x85, 0xe1, 0xc0, 0x99, 0xdb, 
+	0xd8, 0xdc, 0xea, 0xd8, 0xae, 0xe0, 0xde, 0xe1, 0xe6, 0x33, 0x48, 0xe8, 0x35, 0x00, 0xee, 0x43, 
+	0x51, 0xed, 0x65, 0x00, 0xe9, 0x75, 0x71, 0xfb, 0x7f, 0x6c, 0xf3, 0x88, 0x7a, 0xe7, 0xba, 0x00, 
+	0xec, 0xbf, 0xaf, 0xe9, 0xcb, 0xbf, 0xec, 0xcb, 0xa0, 0xf6, 0xdb, 0xcd, 0xe8, 0xe6, 0xe9, 0xf3, 
+	0x4b, 0x55, 0xf7, 0x58, 0x5b, 0xf0, 0x6d, 0x67, 0xf3, 0x78, 0x27, 0xfa, 0x9b, 0x79, 0xef, 0xa8, 
+	0x1d, 0xfb, 0xaf, 0x86, 0xfb, 0xc3, 0x95, 0xee, 0xd2, 0x00, 0xf4, 0xd3, 0xc5, 0xec, 0xea, 0xed, 
+	0xf3, 0x4c, 0x00, 0xfa, 0x64, 0x5f, 0xfd, 0x6e, 0x64, 0xf2, 0x82, 0x00, 0xfb, 0xa7, 0x03, 0xfa, 
+	0xda, 0xa8, 0xfd, 0xd1, 0x9a, 0xf9, 0xe4, 0xb1, 0xf4, 0xfc, 0x05, 0xfb, 0xee, 0xb9, 0xfb, 0xf5, 
+	0xca, 0xf8, 0xf7, 0xf7, 0xff, 0x6e, 0x0f, 0xfe, 0x8f, 0x70, 0xfe, 0xbb, 0x8e, 0xfc, 0xfd, 0xd7
+};
+
+uint8_t texture[32 * 224];
+uint8_t bg_game[SCREEN_WIDTH * SCREEN_HEIGHT];
+uint8_t bg_title[SCREEN_WIDTH * SCREEN_HEIGHT];
+
+
+#define BIGENDIAN_TEXTURING 1
+
+#define GAME_FRAMEBUFFER gfxbuf
+#define REFRESH_SCREEN(index, length) Draw_Video_Akiko()
 
 #define DEFAULT_INTERVAL 40
 
@@ -161,10 +248,10 @@ static inline void my_memcpy32(void *dest, const void *src, size_t n)
     }
 }
 
-static char* myitoa(int value) {
+static char* myitoa(DEFAULT_INT value) {
     static char buffer[12];  // Enough for an integer (-2147483648 has 11 characters + 1 for '\0')
     char* ptr = buffer + sizeof(buffer) - 1;
-    int is_negative = 0;
+    DEFAULT_INT is_negative = 0;
 
     // Null-terminate the buffer
     *ptr = '\0';
@@ -193,42 +280,42 @@ static char* myitoa(int value) {
 #include "qsort.c"
 #include "defines.h"
 
-int force_redraw = 0;
-int force_redraw_puzzle = 0;
+DEFAULT_INT force_redraw = 0;
+DEFAULT_INT force_redraw_puzzle = 0;
 bool backtitle = false;
 
 // Game state variables
-int grid[(GRID_HEIGHT * GRID_WIDTH)];
-int score = 0;
+DEFAULT_INT grid[(GRID_HEIGHT * GRID_WIDTH)];
+DEFAULT_INT score = 0;
 bool game_over = false;
 
 int32_t drop_interval = 30; // Drop every 500ms
 
 // Background state variables
-int clear_background_frames = 0;
+DEFAULT_INT clear_background_frames = 0;
 bool almost_losing = false;
 
 // Current piece
 typedef struct {
-    int type;
-    int rotation;
-    int x, y;
+    DEFAULT_INT type;
+    DEFAULT_INT rotation;
+    DEFAULT_INT x, y;
 } Piece;
 
 Piece current_piece;
 
-void load_puzzle(int index);
-void Game_Switch(int state);
+void load_puzzle(DEFAULT_INT index);
+void Game_Switch(DEFAULT_INT state);
 
 // Define macro for puzzle piece indexing
 #define GET_PUZZLE_PIECE_INDEX(type, rotation, i, j) \
     ((((type) * 4 + (rotation)) * 4 + (i)) * 4 + (j))
 
 FaceToDraw face_list[MAX_FACES];
-int face_count = 0;
+DEFAULT_INT face_count = 0;
 
 // Comparator function for qsort
-static inline int compare_faces(const void *a, const void *b) {
+static inline DEFAULT_INT compare_faces(const void *a, const void *b) {
     const FaceToDraw *faceA = (const FaceToDraw *)a;
     const FaceToDraw *faceB = (const FaceToDraw *)b;
     return faceA->average_depth - faceB->average_depth; // Sort from farthest to nearest
@@ -243,14 +330,14 @@ static inline int compare_faces(const void *a, const void *b) {
 #endif
 
 
-static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D p3, int tetromino_type) 
+static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D p3, DEFAULT_INT tetromino_type) 
 {
     // Use the vertices as given
     Point2D points_array[4] = { p0, p1, p2, p3 };
     Point2D *points = points_array;
 
     // Unrolled min_y and max_y calculation
-    int min_y = points->y, max_y = points->y;
+    DEFAULT_INT min_y = points->y, max_y = points->y;
     if ((points + 1)->y < min_y) min_y = (points + 1)->y; else if ((points + 1)->y > max_y) max_y = (points + 1)->y;
     if ((points + 2)->y < min_y) min_y = (points + 2)->y; else if ((points + 2)->y > max_y) max_y = (points + 2)->y;
     if ((points + 3)->y < min_y) min_y = (points + 3)->y; else if ((points + 3)->y > max_y) max_y = (points + 3)->y;
@@ -266,7 +353,7 @@ static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D 
         Point2D *pA = points + i;
         Point2D *pB = points + ((i + 1) & 3);  // Use bitwise AND to avoid modulo operation
 
-        int dy = pB->y - pA->y;
+        DEFAULT_INT dy = pB->y - pA->y;
         EdgeData *edge = edges + i;
 
         if (dy == 0) {
@@ -285,9 +372,9 @@ static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D 
             edge->u = pA->u;
             edge->v = pA->v;
             
-            int dx = pB->x - pA->x;
-            int du = pB->u - pA->u;
-			int dv = pB->v - pA->v;
+            DEFAULT_INT dx = pB->x - pA->x;
+            DEFAULT_INT du = pB->u - pA->u;
+			DEFAULT_INT dv = pB->v - pA->v;
             edge->x_step = Division(INT_TO_FIXED(pB->x - pA->x) , dy);
             edge->u_step = Division(pB->u - pA->u , dy);
             edge->v_step = Division(pB->v - pA->v , dy);
@@ -300,9 +387,9 @@ static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D 
             edge->v = pB->v;
 
             dy = -dy; // Make dy positive
-			int dx = pA->x - pB->x;
-			int du = pA->u - pB->u;
-			int dv = pA->v - pB->v;
+			DEFAULT_INT dx = pA->x - pB->x;
+			DEFAULT_INT du = pA->u - pB->u;
+			DEFAULT_INT dv = pA->v - pB->v;
 			edge->x_step = Division(INT_TO_FIXED(pA->x - pB->x), dy);
             edge->u_step = Division(pA->u - pB->u , dy);
             edge->v_step = Division(pA->v - pB->v , dy);
@@ -311,12 +398,12 @@ static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D 
 	
 	
     // For each scanline from min_y to max_y
-    for (int y = min_y; y <= max_y; y++) {
-        int num_intersections = 0;
-        int x_intersections[4], u_intersections[4], v_intersections[4];
-        int *x_int_ptr = x_intersections;
-        int *u_int_ptr = u_intersections;
-        int *v_int_ptr = v_intersections;
+    for (DEFAULT_INT y = min_y; y <= max_y; y++) {
+        DEFAULT_INT num_intersections = 0;
+        DEFAULT_INT x_intersections[4], u_intersections[4], v_intersections[4];
+        DEFAULT_INT *x_int_ptr = x_intersections;
+        DEFAULT_INT *u_int_ptr = u_intersections;
+        DEFAULT_INT *v_int_ptr = v_intersections;
 
         // Process edges and update positions in a single loop
         for (int16_t i = 0; i < 4; i++) {
@@ -344,12 +431,12 @@ static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D 
         }
 
         // Pointers to the first two intersections
-        int *x0 = x_intersections;
-        int *x1 = x_intersections + 1;
-        int *u0 = u_intersections;
-        int *u1 = u_intersections + 1;
-        int *v0 = v_intersections;
-        int *v1 = v_intersections + 1;
+        DEFAULT_INT *x0 = x_intersections;
+        DEFAULT_INT *x1 = x_intersections + 1;
+        DEFAULT_INT *u0 = u_intersections;
+        DEFAULT_INT *u1 = u_intersections + 1;
+        DEFAULT_INT *v0 = v_intersections;
+        DEFAULT_INT *v1 = v_intersections + 1;
 
         // Sort intersections by x-coordinate
         if (*x0 > *x1) {
@@ -359,18 +446,18 @@ static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D 
         }
 
         // Draw span between the two intersections
-        int xs = *x0;
-        int xe = *x1;
-        int us = *u0;
-        int vs = *v0;
-        int ue = *u1;
-        int ve = *v1;
+        DEFAULT_INT xs = *x0;
+        DEFAULT_INT xe = *x1;
+        DEFAULT_INT us = *u0;
+        DEFAULT_INT vs = *v0;
+        DEFAULT_INT ue = *u1;
+        DEFAULT_INT ve = *v1;
 
-        int dx = xe - xs;
+        DEFAULT_INT dx = xe - xs;
         if (dx == 0) continue;  // Avoid division by zero
 
-        int du = Division(ue - us, dx);
-		int dv = Division(ve - vs, dx);
+        DEFAULT_INT du = Division(ue - us, dx);
+		DEFAULT_INT dv = Division(ve - vs, dx);
 		drawScanline(xs, xe, us, vs, du, dv, y, tetromino_type);
     }
 }
@@ -381,7 +468,7 @@ static inline void draw_sorted_faces()
 	// Sort faces
 	qsort_game(face_list, face_count, sizeof(FaceToDraw), compare_faces);
 					
-    for (int i = 0; i < face_count; i++) {
+    for (DEFAULT_INT i = 0; i < face_count; i++) {
         FaceToDraw *face = &face_list[i];
         #if 0
         // Draw two triangles per face
@@ -414,40 +501,40 @@ static inline void draw_sorted_faces()
 
 
 
-// Rotate a point around the X-axis
-Point3D rotateX(Point3D p, int angle) {
-    int32_t sinA = sin_lookup[angle & ANGLE_MASK];
-    int32_t cosA = cos_lookup[angle & ANGLE_MASK];
+// Rotate a poDEFAULT_INT around the X-axis
+Point3D rotateX(Point3D p, DEFAULT_INT angle) {
+    int16_t sinA = sin_lookup[angle & ANGLE_MASK];
+    int16_t cosA = cos_lookup[angle & ANGLE_MASK];
 
     int32_t y = FIXED_TO_INT(p.y * cosA - p.z * sinA);
     int32_t z = FIXED_TO_INT(p.y * sinA + p.z * cosA);
     return (Point3D){p.x, y, z};
 }
 
-// Rotate a point around the Y-axis
-Point3D rotateY(Point3D p, int angle) {
-    int32_t sinA = sin_lookup[angle & ANGLE_MASK];
-    int32_t cosA = cos_lookup[angle & ANGLE_MASK];
+// Rotate a poDEFAULT_INT around the Y-axis
+Point3D rotateY(Point3D p, DEFAULT_INT angle) {
+    int16_t sinA = sin_lookup[angle & ANGLE_MASK];
+    int16_t cosA = cos_lookup[angle & ANGLE_MASK];
 
     int32_t x = FIXED_TO_INT(p.x * cosA + p.z * sinA);
     int32_t z = FIXED_TO_INT(p.z * cosA - p.x * sinA);
     return (Point3D){x, p.y, z};
 }
 
-// Rotate a point around the Z-axis
-Point3D rotateZ(Point3D p, int angle) {
-    int32_t sinA = sin_lookup[angle & ANGLE_MASK];
-    int32_t cosA = cos_lookup[angle & ANGLE_MASK];
+// Rotate a poDEFAULT_INT around the Z-axis
+Point3D rotateZ(Point3D p, DEFAULT_INT angle) {
+    int16_t sinA = sin_lookup[angle & ANGLE_MASK];
+    int16_t cosA = cos_lookup[angle & ANGLE_MASK];
 
     int32_t x = FIXED_TO_INT(p.x * cosA - p.y * sinA);
     int32_t y = FIXED_TO_INT(p.x * sinA + p.y * cosA);
     return (Point3D){x, y, p.z};
 }
 
-// Project a 3D point to 2D screen space with texture coordinates
-Point2D project(Point3D p, int32_t u, int32_t v) {
-    int32_t distance = PROJECTION_DISTANCE;
-    int32_t factor = Division(INT_TO_FIXED(distance) , (distance - p.z));
+// Project a 3D poDEFAULT_INT to 2D screen space with texture coordinates
+Point2D project(Point3D p, DEFAULT_INT u, DEFAULT_INT v) {
+    DEFAULT_INT distance = PROJECTION_DISTANCE;
+    DEFAULT_INT factor = Division(INT_TO_FIXED(distance) , (distance - p.z));
     int32_t x = FIXED_TO_INT(p.x * factor);
     int32_t y = FIXED_TO_INT(p.y * factor);
     return (Point2D){x, y, u, v};
@@ -455,10 +542,10 @@ Point2D project(Point3D p, int32_t u, int32_t v) {
 
 // Structure to store previous piece position
 typedef struct {
-    int x;
-    int y;
-    int type;
-    int rotation;
+    DEFAULT_INT x;
+    DEFAULT_INT y;
+    DEFAULT_INT type;
+    DEFAULT_INT rotation;
 } PreviousPieceState;
 
 PreviousPieceState previous_piece_state;
@@ -467,8 +554,8 @@ PreviousPieceState previous_piece_state;
 #define MAX_PIECE_VERTICES (8 * 4) // Max 4 blocks * 8 vertices per block
 #define MAX_PIECE_FACES    (6 * 4) // Max 4 blocks * 6 faces per block
 
-static inline void transform_cube_block(Point3D *transformed_vertices, int x_offset, int y_offset, int z_offset /*, int angle_x, int angle_y*/) {
-    for (int k = 0; k < 8; k++) {
+static inline void transform_cube_block(Point3D *transformed_vertices, DEFAULT_INT x_offset, DEFAULT_INT y_offset, DEFAULT_INT z_offset /*, DEFAULT_INT angle_x, DEFAULT_INT angle_y*/) {
+    for (DEFAULT_INT k = 0; k < 8; k++) {
         Point3D v = cube_vertices_template[k];
         v.x += x_offset;
         v.y += y_offset;
@@ -482,12 +569,12 @@ static inline void transform_cube_block(Point3D *transformed_vertices, int x_off
     }
 }
 
-static inline void process_cube_block_faces(Point3D *transformed_vertices, int tetromino_type) {
-    for (int m = 0; m < 6; m++) {
+static inline void process_cube_block_faces(Point3D *transformed_vertices, DEFAULT_INT tetromino_type) {
+    for (DEFAULT_INT m = 0; m < 6; m++) {
         //if (face_count >= MAX_FACES) break;
 
-        int face_indices[4];
-        for (int n = 0; n < 4; n++) {
+        DEFAULT_INT face_indices[4];
+        for (DEFAULT_INT n = 0; n < 4; n++) {
             face_indices[n] = cube_faces_template[m * 4 + n];
         }
 
@@ -512,9 +599,9 @@ static inline void process_cube_block_faces(Point3D *transformed_vertices, int t
 
         // Prepare projected vertices with per-face texture coordinates
         Point2D projected_points[4];
-        int tex_coord_offset = m * 4 * 2;
+        DEFAULT_INT tex_coord_offset = m * 4 * 2;
 
-        for (int n = 0; n < 4; n++) {
+        for (DEFAULT_INT n = 0; n < 4; n++) {
             Point3D *v = &transformed_vertices[face_indices[n]];
             int32_t u = cube_texcoords_template[tex_coord_offset + n * 2 + 0];
             int32_t v_tex = cube_texcoords_template[tex_coord_offset + n * 2 + 1];
@@ -545,19 +632,19 @@ void draw_current_piece() {
     previous_piece_state.type = current_piece.type;
     previous_piece_state.rotation = current_piece.rotation;
 
-    int type = current_piece.type;
-    int rotation = current_piece.rotation;
-    int grid_x = current_piece.x;
-    int grid_y = current_piece.y;
+    DEFAULT_INT type = current_piece.type;
+    DEFAULT_INT rotation = current_piece.rotation;
+    DEFAULT_INT grid_x = current_piece.x;
+    DEFAULT_INT grid_y = current_piece.y;
     const int32_t *piece_shape = puzzle_pieces;
 
-    for (int i = 0; i < 4; i++) {
-        for (int j = 0; j < 4; j++) {
-            int index = GET_PUZZLE_PIECE_INDEX(type, rotation, i, j);
+    for (DEFAULT_INT i = 0; i < 4; i++) {
+        for (DEFAULT_INT j = 0; j < 4; j++) {
+            DEFAULT_INT index = GET_PUZZLE_PIECE_INDEX(type, rotation, i, j);
             if (piece_shape[index]) {
-                int x_offset = (grid_x + j) * CUBE_SIZE - (GRID_WIDTH * CUBE_SIZE) / 2;
-                int y_offset = (GRID_HEIGHT - (grid_y + i + 1)) * CUBE_SIZE - (GRID_HEIGHT * CUBE_SIZE) / 2;
-                int z_offset = STARTING_Z_OFFSET;
+                DEFAULT_INT x_offset = (grid_x + j) * CUBE_SIZE - (GRID_WIDTH * CUBE_SIZE) / 2;
+                DEFAULT_INT y_offset = (GRID_HEIGHT - (grid_y + i + 1)) * CUBE_SIZE - (GRID_HEIGHT * CUBE_SIZE) / 2;
+                DEFAULT_INT z_offset = STARTING_Z_OFFSET;
 
                 // Transform and store vertices for this block
                 Point3D transformed_vertices[8];
@@ -570,8 +657,8 @@ void draw_current_piece() {
     }
 }
 
-static inline void compute_bounding_box(Point3D *transformed_vertices, int *min_x, int *min_y, int *max_x, int *max_y) {
-    for (int k = 0; k < 8; k++) {
+static inline void compute_bounding_box(Point3D *transformed_vertices, DEFAULT_INT *min_x, DEFAULT_INT *min_y, DEFAULT_INT *max_x, DEFAULT_INT *max_y) {
+    for (DEFAULT_INT k = 0; k < 8; k++) {
         Point2D projected = project(transformed_vertices[k], 0, 0);
         projected.x += SCREEN_WIDTH_HALF;
         projected.y += SCREEN_HEIGHT_HALF;
@@ -586,27 +673,27 @@ static inline void compute_bounding_box(Point3D *transformed_vertices, int *min_
 
 void undraw_previous_piece() {
     // Retrieve previous piece state
-    int type = previous_piece_state.type;
-    int rotation = previous_piece_state.rotation;
-    int grid_x = previous_piece_state.x;
-    int grid_y = previous_piece_state.y;
+    DEFAULT_INT type = previous_piece_state.type;
+    DEFAULT_INT rotation = previous_piece_state.rotation;
+    DEFAULT_INT grid_x = previous_piece_state.x;
+    DEFAULT_INT grid_y = previous_piece_state.y;
 
     // Access the piece shape
     const int32_t *piece_shape = puzzle_pieces;
 
     // Initialize bounding box
-    int min_x = SCREEN_WIDTH;
-    int min_y = SCREEN_HEIGHT;
-    int max_x = 0;
-    int max_y = 0;
+    DEFAULT_INT min_x = SCREEN_WIDTH;
+    DEFAULT_INT min_y = SCREEN_HEIGHT;
+    DEFAULT_INT max_x = 0;
+    DEFAULT_INT max_y = 0;
 
-    for (int i = 0; i < 4; i++) {
-        for (int j = 0; j < 4; j++) {
-			int index = GET_PUZZLE_PIECE_INDEX(type, rotation, i, j);
+    for (DEFAULT_INT i = 0; i < 4; i++) {
+        for (DEFAULT_INT j = 0; j < 4; j++) {
+			DEFAULT_INT index = GET_PUZZLE_PIECE_INDEX(type, rotation, i, j);
             if (piece_shape[index]) {
-                int x_offset = (grid_x + j) * CUBE_SIZE - (GRID_WIDTH * CUBE_SIZE) / 2;
-                int y_offset = (GRID_HEIGHT - (grid_y + i + 1)) * CUBE_SIZE - (GRID_HEIGHT * CUBE_SIZE) / 2;
-                int z_offset = STARTING_Z_OFFSET;
+                DEFAULT_INT x_offset = (grid_x + j) * CUBE_SIZE - (GRID_WIDTH * CUBE_SIZE) / 2;
+                DEFAULT_INT y_offset = (GRID_HEIGHT - (grid_y + i + 1)) * CUBE_SIZE - (GRID_HEIGHT * CUBE_SIZE) / 2;
+                DEFAULT_INT z_offset = STARTING_Z_OFFSET;
 
                 // Transform and store vertices for this block
                 Point3D transformed_vertices[8];
@@ -629,14 +716,14 @@ void undraw_previous_piece() {
     if (max_y >= SCREEN_HEIGHT) max_y = SCREEN_HEIGHT - 1;
 
     // Restore background within the bounding box
-    for (int y = min_y; y <= max_y; y++) {
+    for (DEFAULT_INT y = min_y; y <= max_y; y++) {
         const uint8_t* bg_row = (uint8_t*)bg_game + y * SCREEN_WIDTH;
         uint8_t* screen_row = (uint8_t*)GAME_FRAMEBUFFER + y * SCREEN_WIDTH;
 #if PLATFORM == NECPCFX || PLATFORM == CASLOOPY
         my_memcpy32(screen_row + min_x, bg_row + min_x, max_x - min_x + 2);
 #else
 #ifdef _16BITS_WRITES
-        for (int x = min_x; x <= max_x + 2 /* Extra + 2 to ensure extra clearing */; x += 2) {
+        for (DEFAULT_INT x = min_x; x <= max_x + 2 /* Extra + 2 to ensure extra clearing */; x += 2) {
             int32_t index = y * SCREEN_WIDTH + x;
             int32_t pixel1 = bg_row[x];
             int32_t pixel2 = bg_row[x + 1];
@@ -652,17 +739,17 @@ void undraw_previous_piece() {
 
 
 void draw_grid() {
-    for (int i = 0; i < GRID_HEIGHT; i++) {
-        for (int j = 0; j < GRID_WIDTH; j++) {
-            int cell_value = grid[i * GRID_WIDTH + j];
+    for (DEFAULT_INT i = 0; i < GRID_HEIGHT; i++) {
+        for (DEFAULT_INT j = 0; j < GRID_WIDTH; j++) {
+            DEFAULT_INT cell_value = grid[i * GRID_WIDTH + j];
             if (cell_value) {
-                int tetromino_type = cell_value - 1;
-                int x = j * CUBE_SIZE;
-                int y = (GRID_HEIGHT - (i + 1)) * CUBE_SIZE;
+                DEFAULT_INT tetromino_type = cell_value - 1;
+                DEFAULT_INT x = j * CUBE_SIZE;
+                DEFAULT_INT y = (GRID_HEIGHT - (i + 1)) * CUBE_SIZE;
 
-                int x_offset = x - (GRID_WIDTH * CUBE_SIZE) / 2;
-                int y_offset = y - (GRID_HEIGHT * CUBE_SIZE) / 2;
-                int z_offset = STARTING_Z_OFFSET;
+                DEFAULT_INT x_offset = x - (GRID_WIDTH * CUBE_SIZE) / 2;
+                DEFAULT_INT y_offset = y - (GRID_HEIGHT * CUBE_SIZE) / 2;
+                DEFAULT_INT z_offset = STARTING_Z_OFFSET;
 
                 // Transform and store vertices for this block
                 Point3D transformed_vertices[8];
@@ -676,17 +763,17 @@ void draw_grid() {
 }
 
 // Function to check collision
-bool check_collision(int new_x, int new_y, int new_rotation) {
-    int type = current_piece.type;
-    int rotation = new_rotation;
+bool check_collision(DEFAULT_INT new_x, DEFAULT_INT new_y, DEFAULT_INT new_rotation) {
+    DEFAULT_INT type = current_piece.type;
+    DEFAULT_INT rotation = new_rotation;
     const int32_t *piece_shape = puzzle_pieces;
 
-    for (int i = 0; i < 4; i++) {
-        for (int j = 0; j < 4; j++) {
-			int index = GET_PUZZLE_PIECE_INDEX(type, rotation, i, j);
+    for (DEFAULT_INT i = 0; i < 4; i++) {
+        for (DEFAULT_INT j = 0; j < 4; j++) {
+			DEFAULT_INT index = GET_PUZZLE_PIECE_INDEX(type, rotation, i, j);
             if (piece_shape[index]) {
                 uint32_t x = new_x + j;
-                int y = new_y + i;
+                DEFAULT_INT y = new_y + i;
 
                 if (x >= GRID_WIDTH || y >= GRID_HEIGHT) return true;
                 if (y >= 0 && grid[y * GRID_WIDTH + x]) return true;
@@ -698,9 +785,9 @@ bool check_collision(int new_x, int new_y, int new_rotation) {
 
 // Function to clear full lines and set background flag
 void clear_lines() {
-    for (int i = GRID_HEIGHT - 1; i >= 0; i--) {
+    for (DEFAULT_INT i = GRID_HEIGHT - 1; i >= 0; i--) {
         bool full = true;
-        for (int j = 0; j < GRID_WIDTH; j++) {
+        for (DEFAULT_INT j = 0; j < GRID_WIDTH; j++) {
             if (grid[i * GRID_WIDTH + j] == 0) {
                 full = false;
                 break;
@@ -710,13 +797,13 @@ void clear_lines() {
             score += 100;
             PLAY_SFX(0, EXPLOSION_SFX);
             // Shift rows down by one
-            for (int k = i; k > 0; k--) {
-                for (int j = 0; j < GRID_WIDTH; j++) {
+            for (DEFAULT_INT k = i; k > 0; k--) {
+                for (DEFAULT_INT j = 0; j < GRID_WIDTH; j++) {
                     grid[k * GRID_WIDTH + j] = grid[(k - 1) * GRID_WIDTH + j];
                 }
             }
             // Clear the top row
-            for (int j = 0; j < GRID_WIDTH; j++) {
+            for (DEFAULT_INT j = 0; j < GRID_WIDTH; j++) {
                 grid[j] = 0;
             }
             // Since we've shifted the rows down, re-examine this row
@@ -729,8 +816,8 @@ void clear_lines() {
 // Function to check almost losing condition
 void check_almost_losing() {
     almost_losing = false;
-    int *row = grid + 2 * GRID_WIDTH;
-    for (int j = 0; j < GRID_WIDTH; j++) {
+    DEFAULT_INT *row = grid + 2 * GRID_WIDTH;
+    for (DEFAULT_INT j = 0; j < GRID_WIDTH; j++) {
         if (row[j]) {
             almost_losing = true;
             return;
@@ -740,18 +827,18 @@ void check_almost_losing() {
 
 // Function to merge piece into grid
 void merge_piece() {
-    int type = current_piece.type;
-    int rotation = current_piece.rotation;
-    int grid_x = current_piece.x;
-    int grid_y = current_piece.y;
+    DEFAULT_INT type = current_piece.type;
+    DEFAULT_INT rotation = current_piece.rotation;
+    DEFAULT_INT grid_x = current_piece.x;
+    DEFAULT_INT grid_y = current_piece.y;
     const int32_t *piece_shape = puzzle_pieces;
 
-    for (int i = 0; i < 4; i++) {
-        for (int j = 0; j < 4; j++) {
-            int index = GET_PUZZLE_PIECE_INDEX(type, rotation, i, j);
+    for (DEFAULT_INT i = 0; i < 4; i++) {
+        for (DEFAULT_INT j = 0; j < 4; j++) {
+            DEFAULT_INT index = GET_PUZZLE_PIECE_INDEX(type, rotation, i, j);
             if (piece_shape[index]) {
-                int x = grid_x + j;
-                int y = grid_y + i;
+                DEFAULT_INT x = grid_x + j;
+                DEFAULT_INT y = grid_y + i;
 
                 if (y >= 0 && y < GRID_HEIGHT && x >= 0 && x < GRID_WIDTH) {
                     grid[y * GRID_WIDTH + x] = type + 1;
@@ -761,8 +848,8 @@ void merge_piece() {
     }
 
     // Check for game over condition (if any block reaches the top row)
-    int *top_row = grid;
-    for (int j = 0; j < GRID_WIDTH; j++) {
+    DEFAULT_INT *top_row = grid;
+    for (DEFAULT_INT j = 0; j < GRID_WIDTH; j++) {
         if (top_row[j]) {
             game_over = true;
             break;
@@ -776,7 +863,7 @@ void merge_piece() {
 uint8_t color = 0;
 
 // Function to draw text
-void PrintText(const char* str, int x, int y) 
+void PrintText(const char* str, DEFAULT_INT x, DEFAULT_INT y) 
 {
     print_string(str, 255, 0, x, y, (uint8_t*)GAME_FRAMEBUFFER);
 }
@@ -795,15 +882,15 @@ typedef enum {
 GameState game_state = GAME_STATE_TITLE;
 
 // Uninitiliazed memory
-static unsigned long int mynext;
+static uint64_t mynext;
 
-static inline int myrand(void)
+static inline int32_t myrand(void)
 {
     mynext = mynext * 1103515245 + 12345;
     return (unsigned int)(mynext/65536) % 32768;
 }
 
-static inline void mysrand(unsigned int seed)
+static inline void mysrand(int32_t seed)
 {
     mynext = seed;
 }
@@ -823,12 +910,12 @@ void spawn_piece() {
 }
 
 Puzzle puzzles[MAX_PUZZLES];
-int current_puzzle_index = 0;
-int puzzle_piece_index = 0;
+DEFAULT_INT current_puzzle_index = 0;
+DEFAULT_INT puzzle_piece_index = 0;
 
 // Function to initialize puzzles
 void initialize_puzzles() {
-    int puzzle_index;
+    DEFAULT_INT puzzle_index;
     for (puzzle_index = 0; puzzle_index < MAX_PUZZLES; puzzle_index++) {
         // Clear the current puzzle structure
         memset(&puzzles[puzzle_index], 0, sizeof(Puzzle));
@@ -863,7 +950,7 @@ void spawn_piece_puzzle() {
     if (puzzles[current_puzzle_index].num_pieces - puzzle_piece_index == 0) {
         // No more pieces; check if puzzle is solved
         bool puzzle_solved = true;
-        for (int i = 0; i < GRID_HEIGHT * GRID_WIDTH; i++) {
+        for (DEFAULT_INT i = 0; i < GRID_HEIGHT * GRID_WIDTH; i++) {
             if (grid[i]) {
                 puzzle_solved = false;
                 break;
@@ -896,7 +983,7 @@ void spawn_piece_puzzle() {
 
 
 // Function to load a puzzle
-void load_puzzle(int index) {
+void load_puzzle(DEFAULT_INT index) {
 	backtitle = false;
     if (index >= MAX_PUZZLES) {
         // No more puzzles
@@ -908,7 +995,7 @@ void load_puzzle(int index) {
 	memcpy(
 		grid,
 		&initial_grids[index * GRID_HEIGHT * GRID_WIDTH],
-		GRID_HEIGHT * GRID_WIDTH * sizeof(int)
+		GRID_HEIGHT * GRID_WIDTH * sizeof(DEFAULT_INT)
 	);
    // memcpy(grid, puzzle->initial_grid, sizeof(grid));
    
@@ -922,12 +1009,12 @@ void load_puzzle(int index) {
 }
 
 
-void draw_title_cube(int angle_x, int angle_y, int angle_z, int cube_position_x, int cube_position_y, int distance_cube_titlescreen) {
+void draw_title_cube(DEFAULT_INT angle_x, DEFAULT_INT angle_y, DEFAULT_INT angle_z, DEFAULT_INT cube_position_x, DEFAULT_INT cube_position_y, DEFAULT_INT distance_cube_titlescreen) {
     // Prepare transformed vertices
     Point3D transformed_vertices[8];
     Point2D projected_points[8];
 
-    for (int i = 0; i < 8; i++) {
+    for (DEFAULT_INT i = 0; i < 8; i++) {
         Point3D v = cube_vertices_template[i];
 
         // Adjust the size of the cube
@@ -953,20 +1040,20 @@ void draw_title_cube(int angle_x, int angle_y, int angle_z, int cube_position_x,
         projected_points[i].y += SCREEN_HEIGHT_HALF;
     }
 
-    int num_faces = 6;
-    int faceDepths[6];
-    int faceOrder[6];
+    DEFAULT_INT num_faces = 6;
+    DEFAULT_INT faceDepths[6];
+    DEFAULT_INT faceOrder[6];
     bool backface[6];
 
     // For each face, compute backface culling and depth
-    for (int i = 0; i < num_faces; i++) {
+    for (DEFAULT_INT i = 0; i < num_faces; i++) {
         faceOrder[i] = i; // Initialize face order
 
         // Get indices into the vertex index mapping
-        int idx0 = cube_faces_template[i * 4 + 0];
-        int idx1 = cube_faces_template[i * 4 + 1];
-        int idx2 = cube_faces_template[i * 4 + 2];
-        int idx3 = cube_faces_template[i * 4 + 3];
+        DEFAULT_INT idx0 = cube_faces_template[i * 4 + 0];
+        DEFAULT_INT idx1 = cube_faces_template[i * 4 + 1];
+        DEFAULT_INT idx2 = cube_faces_template[i * 4 + 2];
+        DEFAULT_INT idx3 = cube_faces_template[i * 4 + 3];
 
         Point3D *v0 = &transformed_vertices[idx0];
         Point3D *v1 = &transformed_vertices[idx1];
@@ -992,10 +1079,10 @@ void draw_title_cube(int angle_x, int angle_y, int angle_z, int cube_position_x,
     }
 
     // Sort faces from farthest to nearest (ascending z_sum)
-    for (int i = 0; i < num_faces - 1; i++) {
-        for (int j = i + 1; j < num_faces; j++) {
+    for (DEFAULT_INT i = 0; i < num_faces - 1; i++) {
+        for (DEFAULT_INT j = i + 1; j < num_faces; j++) {
             if (faceDepths[faceOrder[i]] > faceDepths[faceOrder[j]]) {
-                int temp = faceOrder[i];
+                DEFAULT_INT temp = faceOrder[i];
                 faceOrder[i] = faceOrder[j];
                 faceOrder[j] = temp;
             }
@@ -1003,19 +1090,19 @@ void draw_title_cube(int angle_x, int angle_y, int angle_z, int cube_position_x,
     }
 	
     // Draw faces
-    for (int k = 0; k < num_faces; k++) {
-        int i = faceOrder[k];
+    for (DEFAULT_INT k = 0; k < num_faces; k++) {
+        DEFAULT_INT i = faceOrder[k];
 
         if (backface[i]) continue; // Skip back-facing faces
 
         // Get indices into the vertex index mapping
-        int idx0 = cube_faces_template[i * 4 + 0];
-        int idx1 = cube_faces_template[i * 4 + 1];
-        int idx2 = cube_faces_template[i * 4 + 2];
-        int idx3 = cube_faces_template[i * 4 + 3];
+        DEFAULT_INT idx0 = cube_faces_template[i * 4 + 0];
+        DEFAULT_INT idx1 = cube_faces_template[i * 4 + 1];
+        DEFAULT_INT idx2 = cube_faces_template[i * 4 + 2];
+        DEFAULT_INT idx3 = cube_faces_template[i * 4 + 3];
 
         // Get texture coordinates
-        int tex_coord_offset = i * 4 * 2;
+        DEFAULT_INT tex_coord_offset = i * 4 * 2;
         int32_t u0 = cube_texcoords_template[tex_coord_offset + 0];
         int32_t v0 = cube_texcoords_template[tex_coord_offset + 1];
         int32_t u1 = cube_texcoords_template[tex_coord_offset + 2];
@@ -1046,31 +1133,31 @@ void draw_title_cube(int angle_x, int angle_y, int angle_z, int cube_position_x,
 
 
 // Add these variables at the beginning of main, with the other variable declarations
-int a_button = 0;
-int b_button = 0;
-int up_button = 0;
-int down_button = 0;
-int left_button = 0;
-int right_button = 0;
-int start_button = 0;
-int select_button = 0;
-int hold_down_button = 0;
+DEFAULT_INT a_button = 0;
+DEFAULT_INT b_button = 0;
+DEFAULT_INT up_button = 0;
+DEFAULT_INT down_button = 0;
+DEFAULT_INT left_button = 0;
+DEFAULT_INT right_button = 0;
+DEFAULT_INT start_button = 0;
+DEFAULT_INT select_button = 0;
+DEFAULT_INT hold_down_button = 0;
 
 // Previous button states
-int prev_a_button = 0;
-int prev_b_button = 0;
-int prev_up_button = 0;
-int prev_down_button = 0;
-int prev_left_button = 0;
-int prev_right_button = 0;
-int prev_start_button = 0;
-int prev_select_button = 0;
+DEFAULT_INT prev_a_button = 0;
+DEFAULT_INT prev_b_button = 0;
+DEFAULT_INT prev_up_button = 0;
+DEFAULT_INT prev_down_button = 0;
+DEFAULT_INT prev_left_button = 0;
+DEFAULT_INT prev_right_button = 0;
+DEFAULT_INT prev_start_button = 0;
+DEFAULT_INT prev_select_button = 0;
 
 
-int padtype  = 0;
-int paddata  = 0;
-int oldpadtype  = 0;
-int oldpaddata  = 0;
+DEFAULT_INT padtype  = 0;
+DEFAULT_INT paddata  = 0;
+DEFAULT_INT oldpadtype  = 0;
+DEFAULT_INT oldpaddata  = 0;
 
 int32_t oldpad1, oldpad0;
 int32_t newpad1, newpad0;
@@ -1116,24 +1203,24 @@ void update_previous_buttons() {
     prev_select_button = select_button;
 }
 
-int title_cube_rotation_x = 0;
-int title_cube_rotation_y = 0;
-int title_cube_rotation_z = 0;
+DEFAULT_INT title_cube_rotation_x = 0;
+DEFAULT_INT title_cube_rotation_y = 0;
+DEFAULT_INT title_cube_rotation_z = 0;
 // Variables to control cube movement
-int title_cube_position_x = 0;
-int title_cube_position_z = 0;
-int z_counter = 0;
-int title_cube_move_direction = 1;
-int title_cube_move_speed = 1; // Adjust the speed as needed
-int title_cube_max_position = 64; // Maximum movement to the right
-int title_cube_min_position = -64; // Maximum movement to the left;
-int angle_x = 0; // Slight angle to see the top
-int angle_y = 0;
+DEFAULT_INT title_cube_position_x = 0;
+DEFAULT_INT title_cube_position_z = 0;
+DEFAULT_INT z_counter = 0;
+DEFAULT_INT title_cube_move_direction = 1;
+DEFAULT_INT title_cube_move_speed = 1; // Adjust the speed as needed
+DEFAULT_INT title_cube_max_position = 64; // Maximum movement to the right
+DEFAULT_INT title_cube_min_position = -64; // Maximum movement to the left;
+DEFAULT_INT angle_x = 0; // Slight angle to see the top
+DEFAULT_INT angle_y = 0;
 
-int mus = 0;
+DEFAULT_INT mus = 0;
 
-int alt_state = GAME_STATE_TITLE;
-void Game_Switch(int state)
+DEFAULT_INT alt_state = GAME_STATE_TITLE;
+void Game_Switch(DEFAULT_INT state)
 {
 	alt_state = state;
 #if PLATFORM == NECPCFX
@@ -1273,31 +1360,31 @@ void Game_Switch(int state)
 	}
 }
 
-int cubes_to_process = 0;
+DEFAULT_INT cubes_to_process = 0;
 
 void draw_grid_partial() {
     // Define the area around the current piece to redraw
-    const int REDRAW_MARGIN = 4;  // Adjust this value based on your needs
+    const DEFAULT_INT REDRAW_MARGIN = 4;  // Adjust this value based on your needs
 
-    int start_y = max(0, current_piece.y - REDRAW_MARGIN);
-    int end_y = min(GRID_HEIGHT - 1, current_piece.y + REDRAW_MARGIN);
-    int start_x = max(0, current_piece.x - REDRAW_MARGIN);
-    int end_x = min(GRID_WIDTH - 1, current_piece.x + REDRAW_MARGIN);
+    DEFAULT_INT start_y = max(0, current_piece.y - REDRAW_MARGIN);
+    DEFAULT_INT end_y = min(GRID_HEIGHT - 1, current_piece.y + REDRAW_MARGIN);
+    DEFAULT_INT start_x = max(0, current_piece.x - REDRAW_MARGIN);
+    DEFAULT_INT end_x = min(GRID_WIDTH - 1, current_piece.x + REDRAW_MARGIN);
 
 	//cubes_to_process = 0;
 
     // Only draw grid cells within the defined area
-    for (int i = start_y; i <= end_y; i++) {
-        for (int j = start_x; j <= end_x; j++) {
-            int cell_value = grid[i * GRID_WIDTH + j];
+    for (DEFAULT_INT i = start_y; i <= end_y; i++) {
+        for (DEFAULT_INT j = start_x; j <= end_x; j++) {
+            DEFAULT_INT cell_value = grid[i * GRID_WIDTH + j];
             if (cell_value) {
-                int tetromino_type = cell_value - 1;
-                int x = j * CUBE_SIZE;
-                int y = (GRID_HEIGHT - (i + 1)) * CUBE_SIZE;
+                DEFAULT_INT tetromino_type = cell_value - 1;
+                DEFAULT_INT x = j * CUBE_SIZE;
+                DEFAULT_INT y = (GRID_HEIGHT - (i + 1)) * CUBE_SIZE;
 
-                int x_offset = x - (GRID_WIDTH * CUBE_SIZE) / 2;
-                int y_offset = y - (GRID_HEIGHT * CUBE_SIZE) / 2;
-                int z_offset = STARTING_Z_OFFSET;
+                DEFAULT_INT x_offset = x - (GRID_WIDTH * CUBE_SIZE) / 2;
+                DEFAULT_INT y_offset = y - (GRID_HEIGHT * CUBE_SIZE) / 2;
+                DEFAULT_INT z_offset = STARTING_Z_OFFSET;
 
                 // Transform and store vertices for this block
                 Point3D transformed_vertices[8];
@@ -1352,7 +1439,7 @@ bool load_background(const char* filename, uint8_t* bg_array) {
 #endif
 
 
-int Init_video_game()
+DEFAULT_INT Init_video_game()
 {
 #if PLATFORM == NECPCFX
 #ifdef CART_AUDIO
@@ -1421,10 +1508,19 @@ int Init_video_game()
 	VDP_BMn_WIDTH[0] = 255;
 	VDP_BMn_HEIGHT[0] = 511;
 
-	for(unsigned int i = 0; i < 256; i++){
+	for( DEFAULT_INT i = 0; i < 256; i++){
 		VDP_PALETTE[i] = gamepal[i];
 	}
 
+#elif PLATFORM == CD32
+
+	Init_Video(320, 240, 320, 240, 1);
+	SetPalette_Video(gamepal, 256);
+	
+	LoadFile_tobuffer("title320.raw", bg_title);
+	LoadFile_tobuffer("bg320.raw", bg_game);
+	LoadFile_tobuffer("textures.raw", texture);
+	
 #else
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         fprintf(stderr, "SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
@@ -1487,7 +1583,7 @@ int Init_video_game()
 	return 0;
 }
 
-int main() 
+DEFAULT_INT main() 
 {
 	if (Init_video_game() == 1)
 	{
@@ -1505,9 +1601,9 @@ int main()
 
     // Initialize puzzles
     initialize_puzzles();
-	int running = 1;
-	int last_tick = 0;
-	int last_drop = 0;
+	DEFAULT_INT running = 1;
+	DEFAULT_INT last_tick = 0;
+	DEFAULT_INT last_drop = 0;
 #if PLATFORM == UNIX
     SDL_Event event;
 	last_tick = SDL_GetTicks();
@@ -1517,11 +1613,11 @@ int main()
     int32_t current_tick = 0;
     int32_t game_tick = 0;
 
-    int blink_counter = 0;
+    DEFAULT_INT blink_counter = 0;
     bool blink_on = true;
 
     // Menu variables
-    int menu_selection = 0; // 0: Arcade, 1: Puzzle
+    DEFAULT_INT menu_selection = 0; // 0: Arcade, 1: Puzzle
     
     Game_Switch(GAME_STATE_TITLE);
     
@@ -1613,7 +1709,7 @@ int main()
 			start_button = 1;
 		}
 		
-#else
+#elif PLATFORM == UNIX
         Uint32 current_tick = SDL_GetTicks();
         last_tick = current_tick;
         game_tick = current_tick - last_drop;
@@ -1729,7 +1825,7 @@ int main()
 #ifdef FORCE_FULLSCREEN_DRAWS
 				my_memcpy32(GAME_FRAMEBUFFER, bg_title, SCREEN_WIDTH * SCREEN_HEIGHT);
 #else
-				my_memcpy32(GAME_FRAMEBUFFER + (SCREEN_WIDTH * 45), bg_title + (SCREEN_WIDTH * 45), SCREEN_WIDTH * 100);
+				my_memcpy32(GAME_FRAMEBUFFER + (SCREEN_WIDTH * 45  * FB_SIZE), bg_title + (SCREEN_WIDTH * 45  * FB_SIZE), SCREEN_WIDTH * 100);
 #endif
 				// Draw rotating cube with updated position
 				draw_title_cube(title_cube_rotation_x, title_cube_rotation_y, title_cube_rotation_z, title_cube_position_x, -20, title_cube_position_z);
@@ -1769,7 +1865,7 @@ int main()
 #ifdef FORCE_FULLSCREEN_DRAWS
 				my_memcpy32(GAME_FRAMEBUFFER, bg_title, SCREEN_WIDTH * SCREEN_HEIGHT);
 #else
-				my_memcpy32(GAME_FRAMEBUFFER + (SCREEN_WIDTH * 90), bg_title + (SCREEN_WIDTH * 90), SCREEN_WIDTH * 48);
+				my_memcpy32(GAME_FRAMEBUFFER + (SCREEN_WIDTH * 45 * FB_SIZE), bg_title + (SCREEN_WIDTH * 45 * FB_SIZE), SCREEN_WIDTH * 48);
 #endif
 
 				switch(menu_selection)
@@ -1795,8 +1891,11 @@ int main()
 					break;
 				}
 
+#if PLATFORM == CD32
+				Draw_Video_Akiko_partial(0, SCREEN_WIDTH*90, 320, (SCREEN_WIDTH*90)-240);
+#else
 				REFRESH_SCREEN(SCREEN_WIDTH*90, SCREEN_WIDTH*48);
-
+#endif
 				if (BUTTON_PRESSED(a_button)) 
 				{
 					if (menu_selection == 0) 
@@ -1843,7 +1942,7 @@ int main()
 						}
 					}
 					if (DPAD_PRESSED(a_button)) {
-						int new_rotation = (current_piece.rotation + 1) & 3;
+						DEFAULT_INT new_rotation = (current_piece.rotation + 1) & 3;
 						if (!check_collision(current_piece.x, current_piece.y, new_rotation))
 						{
 							current_piece.rotation = new_rotation;
@@ -1937,7 +2036,7 @@ int main()
 
 					if (game_state == GAME_STATE_PUZZLE) {
 						// Display remaining pieces
-						int remaining_pieces = puzzles[current_puzzle_index].num_pieces - puzzle_piece_index;
+						DEFAULT_INT remaining_pieces = puzzles[current_puzzle_index].num_pieces - puzzle_piece_index;
 						PrintText("Left", 10, 10);
 						PrintText(myitoa(remaining_pieces), 10, 30);
 					}
@@ -2000,6 +2099,8 @@ int main()
 		#elif PLATFORM == CASLOOPY
 			CopyFrameBuffer((int*) framebuffer_game, (int*) VDP_BITMAP_VRAM );
 			BiosVsync();
+		#elif PLATFORM == CD32
+			//Update_Video();
 		#else
 			if(real_FPS > SDL_GetTicks()-current_tick) SDL_Delay(real_FPS-(SDL_GetTicks()-current_tick));
 			SDL_Flip(screen);

@@ -1,0 +1,28 @@
+CC = m68k-amigaos-gcc -m68020
+EXE = game
+
+#  -mrtd Can't use :/
+# -fipa-pta -fno-plt -fno-PIC -malign-int -mxgot 
+CFLAGS  = -Os -fomit-frame-pointer -mcpu=68020 -mtune=68020 -flto -I. -Isrc -mxgot -fipa-pta -DPLATFORM=4 -DBY16=1 -DFAST_DRAWING
+# very small caches, avoid optimization options making the binary much bigger
+CFLAGS += -finline-limit=42 -ffast-math
+CFLAGS += -fno-common -fno-stack-protector -fno-guess-branch-probability -fno-caller-saves -fno-tree-loop-if-convert -fno-regmove
+
+STRIP = $(HOST)strip
+
+SRC = cd32.c src/main.c src/common.c src/font_drawing.c
+
+LDFLAGS = -lc -lgcc -lamiga -lm -Wl,--as-needed -Wl,--gc-sections -s -flto
+
+OBJ = $(SRC:.c=.o)
+
+all : $(SRC) $(EXE)
+
+$(EXE): $(OBJ)
+	$(CC) $(CFLAGS) $(OBJ) -o $@ $(LDFLAGS)
+	
+.c.o:
+	$(CC) $(CFLAGS) -c $< -o $@
+
+clean:
+	rm -rf $(OBJ) $(EXE) *.iso cdda.raw

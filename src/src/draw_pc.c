@@ -6,7 +6,8 @@ static inline uint32_t fetchTextureColor(int32_t u, int32_t v, int tetromino_typ
     bool is_brighter = tex_v_full >= 16;
     uint8_t local_v = tex_v_full & 0x0F;
     int tile_index = tetromino_type * 2 + (is_brighter ? 1 : 0);
-    if (tile_index >= 14) tile_index = 0;
+    //if (tile_index >= 14) tile_index = 0;
+    
 #if defined(_16BITS_WRITES)
     // Since texture is stored as uint16_t but contains 8-bit values, we access it as uint16_t*
     uint8_t *texture16 = (uint8_t *)texture;
@@ -32,41 +33,48 @@ static inline void SetPixel16(uint32_t x, uint32_t y, int32_t color) {
     ((uint16_t*)GAME_FRAMEBUFFER)[index >> 1] = color;
 }
 
-static inline void drawScanline(int32_t xs, int32_t xe, int32_t u, int32_t v,
-    int32_t du, int32_t dv, int y, int tetromino_type) {
+static inline void drawScanline(int32_t xs, int32_t xe, DEFAULT_INT u, DEFAULT_INT v,
+    DEFAULT_INT du, DEFAULT_INT dv, DEFAULT_INT y, DEFAULT_INT tetromino_type) {
 #if defined(_8BITS_WRITES)
     for (int32_t x = xs; x <= xe; x++) {
-        int32_t color = fetchTextureColor(u, v, tetromino_type);
+        DEFAULT_INT color = fetchTextureColor(u, v, tetromino_type);
         SetPixel8(x, y, color);
         u += du;
         v += dv;
     }
 #elif defined(_16BITS_WRITES)
+
+#ifndef FAST_DRAWING
     if (xs & 1) {
         SetPixel8(xs, y, fetchTextureColor(u, v, tetromino_type));
         xs++;
         u += du;
         v += dv;
     }
+#endif
 
     int32_t x;
     for (x = xs; x <= xe - 1; x += 2) {
-        int32_t color1 = fetchTextureColor(u, v, tetromino_type);
+        DEFAULT_INT color1 = fetchTextureColor(u, v, tetromino_type);
         u += du;
         v += dv;
-        int32_t color2 = fetchTextureColor(u, v, tetromino_type);
+        DEFAULT_INT color2 = fetchTextureColor(u, v, tetromino_type);
         u += du;
         v += dv;
 #ifdef BIGENDIAN_TEXTURING
-        int32_t colors = (color1 << 8) | color2;
+        DEFAULT_INT colors = (color1 << 8) | color2;
 #else
-        int32_t colors = (color2 << 8) | color1;
+        DEFAULT_INT colors = (color2 << 8) | color1;
 #endif
         SetPixel16(x, y, colors);
     }
+    
+#ifndef FAST_DRAWING
     if (x == xe) {
         int32_t color = fetchTextureColor(u, v, tetromino_type);
         SetPixel8(x, y, color);
     }
+#endif
+    
 #endif
 }

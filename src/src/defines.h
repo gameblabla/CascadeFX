@@ -4,8 +4,19 @@
 #define NECPCFX 1 
 #define UNIX 2 
 #define CASLOOPY 3
+#define CD32 4
 
 #if PLATFORM == UNIX
+
+// Base screen dimensions for scaling
+#define BASE_SCREEN_WIDTH 320
+#define BASE_SCREEN_HEIGHT 240
+
+// Screen dimensions
+#define SCREEN_WIDTH 320
+#define SCREEN_HEIGHT 240
+
+#elif PLATFORM == CD32
 
 // Base screen dimensions for scaling
 #define BASE_SCREEN_WIDTH 320

@@ -2,7 +2,7 @@
 #include "common.h"
 #include "defines.h"
 
-int divTab[DIV_TAB_SIZE];
+int32_t divTab[DIV_TAB_SIZE];
 
 void initDivs()
 {
@@ -85,7 +85,7 @@ const int32_t puzzle_pieces[7 * 4 * 4 * 4] = {
 
 
 // Updated cube texture coordinates template with 24 entries
-ORAM_DATA const int32_t cube_texcoords_template[24 * 2] = {
+ORAM_DATA const DEFAULT_INT cube_texcoords_template[24 * 2] = {
     // Front face (indices 0 to 7)
     0<<8, 0<<8,    // Vertex 0
     31<<8, 0<<8,   // Vertex 1
@@ -118,7 +118,7 @@ ORAM_DATA const int32_t cube_texcoords_template[24 * 2] = {
     0<<8, 0<<8     // Vertex 23
 };
 
-ORAM_DATA const int cube_faces_template[6 * 4] = {
+ORAM_DATA const DEFAULT_INT cube_faces_template[6 * 4] = {
     0, 1, 2, 3,   // Front face
     5, 4, 7, 6,   // Back face
     4, 0, 3, 7,   // Left face
@@ -142,7 +142,7 @@ ORAM_DATA const Point3D cube_vertices_template[8] = {
 
 
 // Grids for puzzle mode
-const int initial_grids[MAX_PUZZLES * GRID_HEIGHT * GRID_WIDTH] = {
+const DEFAULT_INT initial_grids[MAX_PUZZLES * GRID_HEIGHT * GRID_WIDTH] = {
     // Puzzle 1 grid data
     // Rows 0-9: all zeros
     ROW_ZEROS, // Row 0

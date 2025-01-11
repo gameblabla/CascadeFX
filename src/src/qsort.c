@@ -33,12 +33,12 @@ static inline void swap_elements(void *a, void *b, size_t size) {
     }
 }
 
-static inline int partition(void *base, size_t size, int low, int high, int (*compar)(const void *, const void *)) {
+static inline DEFAULT_INT partition(void *base, size_t size, DEFAULT_INT low, DEFAULT_INT high, DEFAULT_INT (*compar)(const void *, const void *)) {
     char *arr = (char*)base;
     char *pivot = arr + high * size;
-    int i = low - 1;
+    DEFAULT_INT i = low - 1;
 
-    for (int j = low; j < high; j++) {
+    for (DEFAULT_INT j = low; j < high; j++) {
         if (compar(arr + j * size, pivot) <= 0) {
             i++;
             swap_elements(arr + i * size, arr + j * size, size);
@@ -48,16 +48,16 @@ static inline int partition(void *base, size_t size, int low, int high, int (*co
     return i + 1;
 }
 
-static inline void quicksort(void *base, size_t size, int low, int high, int (*compar)(const void *, const void *)) {
+static inline void quicksort(void *base, size_t size, DEFAULT_INT low, DEFAULT_INT high, DEFAULT_INT (*compar)(const void *, const void *)) {
     if (low < high) 
     {
-        int pi = partition(base, size, low, high, compar);
+        DEFAULT_INT pi = partition(base, size, low, high, compar);
 
         quicksort(base, size, low, pi - 1, compar);
         quicksort(base, size, pi + 1, high, compar);
     }
 }
 
-static void qsort_game(void *base, size_t num, size_t size, int (*compar)(const void *, const void *)) {
+static void qsort_game(void *base, size_t num, size_t size, DEFAULT_INT (*compar)(const void *, const void *)) {
     quicksort(base, size, 0, num - 1, compar);
 }
