@@ -325,6 +325,8 @@ static inline DEFAULT_INT compare_faces(const void *a, const void *b) {
 #include "draw_pcfx.c"
 #elif PLATFORM == CASLOOPY
 #include "draw_casloopy.c"
+#elif PLATFORM == CD32
+#include "draw_fast.c"
 #else
 #include "draw_pc.c"
 #endif
@@ -531,7 +533,14 @@ Point3D rotateZ(Point3D p, DEFAULT_INT angle) {
     return (Point3D){x, y, p.z};
 }
 
-// Project a 3D poDEFAULT_INT to 2D screen space with texture coordinates
+#ifdef FAST_DRAWING
+/* Orthographic Projection */
+static inline Point2D project(Point3D p, DEFAULT_INT u, DEFAULT_INT v) {
+    DEFAULT_INT x = -p.x;
+    DEFAULT_INT y = -p.y;
+    return (Point2D){x, y, u, v};
+}
+#else
 Point2D project(Point3D p, DEFAULT_INT u, DEFAULT_INT v) {
     DEFAULT_INT distance = PROJECTION_DISTANCE;
     DEFAULT_INT factor = Division(INT_TO_FIXED(distance) , (distance - p.z));
@@ -539,6 +548,8 @@ Point2D project(Point3D p, DEFAULT_INT u, DEFAULT_INT v) {
     int32_t y = FIXED_TO_INT(MULTIPLY(p.y , factor));
     return (Point2D){x, y, u, v};
 }
+#endif
+
 
 // Structure to store previous piece position
 typedef struct {
@@ -719,7 +730,7 @@ void undraw_previous_piece() {
     for (DEFAULT_INT y = min_y; y <= max_y; y++) {
         const uint8_t* bg_row = (uint8_t*)bg_game + y * SCREEN_WIDTH;
         uint8_t* screen_row = (uint8_t*)GAME_FRAMEBUFFER + y * SCREEN_WIDTH;
-#if PLATFORM == NECPCFX || PLATFORM == CASLOOPY
+#if PLATFORM == NECPCFX || PLATFORM == CASLOOPY || PLATFORM == CD32
         my_memcpy32(screen_row + min_x, bg_row + min_x, max_x - min_x + 2);
 #else
 #ifdef _16BITS_WRITES
