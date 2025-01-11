@@ -4,6 +4,11 @@
 
 int32_t divTab[DIV_TAB_SIZE];
 
+int32_t MULTIPLY(DEFAULT_INT a, DEFAULT_INT b)
+{
+	return (DEFAULT_INT)a * (DEFAULT_INT)b;
+}
+
 void initDivs()
 {
     int i, ii;

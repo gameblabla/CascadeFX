@@ -74,4 +74,6 @@ typedef struct {
 
 extern const DEFAULT_INT initial_grids[MAX_PUZZLES * GRID_HEIGHT * GRID_WIDTH];
 
+extern int32_t MULTIPLY(DEFAULT_INT a, DEFAULT_INT b);
+
 #endif

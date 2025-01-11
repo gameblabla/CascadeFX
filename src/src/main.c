@@ -506,8 +506,8 @@ Point3D rotateX(Point3D p, DEFAULT_INT angle) {
     int16_t sinA = sin_lookup[angle & ANGLE_MASK];
     int16_t cosA = cos_lookup[angle & ANGLE_MASK];
 
-    int32_t y = FIXED_TO_INT(p.y * cosA - p.z * sinA);
-    int32_t z = FIXED_TO_INT(p.y * sinA + p.z * cosA);
+    int32_t y = FIXED_TO_INT(MULTIPLY(p.y , cosA) - MULTIPLY(p.z , sinA));
+    int32_t z = FIXED_TO_INT(MULTIPLY(p.y , sinA) + MULTIPLY(p.z , cosA));
     return (Point3D){p.x, y, z};
 }
 
@@ -516,8 +516,8 @@ Point3D rotateY(Point3D p, DEFAULT_INT angle) {
     int16_t sinA = sin_lookup[angle & ANGLE_MASK];
     int16_t cosA = cos_lookup[angle & ANGLE_MASK];
 
-    int32_t x = FIXED_TO_INT(p.x * cosA + p.z * sinA);
-    int32_t z = FIXED_TO_INT(p.z * cosA - p.x * sinA);
+    int32_t x = FIXED_TO_INT(MULTIPLY(p.x , cosA) + MULTIPLY(p.z , sinA));
+    int32_t z = FIXED_TO_INT(MULTIPLY(p.z , cosA) - MULTIPLY(p.x , sinA));
     return (Point3D){x, p.y, z};
 }
 
@@ -526,8 +526,8 @@ Point3D rotateZ(Point3D p, DEFAULT_INT angle) {
     int16_t sinA = sin_lookup[angle & ANGLE_MASK];
     int16_t cosA = cos_lookup[angle & ANGLE_MASK];
 
-    int32_t x = FIXED_TO_INT(p.x * cosA - p.y * sinA);
-    int32_t y = FIXED_TO_INT(p.x * sinA + p.y * cosA);
+    int32_t x = FIXED_TO_INT(MULTIPLY(p.x , cosA) - MULTIPLY(p.y , sinA));
+    int32_t y = FIXED_TO_INT(MULTIPLY(p.x , sinA) + MULTIPLY(p.y , cosA));
     return (Point3D){x, y, p.z};
 }
 
@@ -535,8 +535,8 @@ Point3D rotateZ(Point3D p, DEFAULT_INT angle) {
 Point2D project(Point3D p, DEFAULT_INT u, DEFAULT_INT v) {
     DEFAULT_INT distance = PROJECTION_DISTANCE;
     DEFAULT_INT factor = Division(INT_TO_FIXED(distance) , (distance - p.z));
-    int32_t x = FIXED_TO_INT(p.x * factor);
-    int32_t y = FIXED_TO_INT(p.y * factor);
+    int32_t x = FIXED_TO_INT(MULTIPLY(p.x , factor));
+    int32_t y = FIXED_TO_INT(MULTIPLY(p.y , factor));
     return (Point2D){x, y, u, v};
 }
 
@@ -593,7 +593,7 @@ static inline void process_cube_block_faces(Point3D *transformed_vertices, DEFAU
 
         //int32_t nx = ay * bz - az * by;
         //int32_t ny = az * bx - ax * bz;
-        int32_t nz = ax * by - ay * bx;
+        int32_t nz = MULTIPLY(ax , by) - MULTIPLY(ay , bx);
 
         if (nz > 0) continue; // Back-face culling
 
@@ -1018,9 +1018,9 @@ void draw_title_cube(DEFAULT_INT angle_x, DEFAULT_INT angle_y, DEFAULT_INT angle
         Point3D v = cube_vertices_template[i];
 
         // Adjust the size of the cube
-        v.x = (v.x * distance_cube_titlescreen) / DISTANCE_CUBE;
-        v.y = (v.y * distance_cube_titlescreen) / DISTANCE_CUBE;
-        v.z = (v.z * distance_cube_titlescreen) / DISTANCE_CUBE;
+        v.x = (MULTIPLY(v.x , distance_cube_titlescreen)) / DISTANCE_CUBE;
+        v.y = (MULTIPLY(v.y , distance_cube_titlescreen)) / DISTANCE_CUBE;
+        v.z = (MULTIPLY(v.z , distance_cube_titlescreen)) / DISTANCE_CUBE;
 
         // Rotate cube
         v = rotateX(v, angle_x);
@@ -1069,7 +1069,7 @@ void draw_title_cube(DEFAULT_INT angle_x, DEFAULT_INT angle_y, DEFAULT_INT angle
         int32_t by = v2->y - v0->y;
         int32_t bz = v2->z - v0->z;
 
-        int32_t nz = ax * by - ay * bx;
+        int32_t nz = MULTIPLY(ax , by) - MULTIPLY(ay , bx);
 
         // Back-face culling
         backface[i] = (nz > 0);
@@ -1211,7 +1211,7 @@ DEFAULT_INT title_cube_position_x = 0;
 DEFAULT_INT title_cube_position_z = 0;
 DEFAULT_INT z_counter = 0;
 DEFAULT_INT title_cube_move_direction = 1;
-DEFAULT_INT title_cube_move_speed = 1; // Adjust the speed as needed
+const DEFAULT_INT title_cube_move_speed = 1; // Adjust the speed as needed
 DEFAULT_INT title_cube_max_position = 64; // Maximum movement to the right
 DEFAULT_INT title_cube_min_position = -64; // Maximum movement to the left;
 DEFAULT_INT angle_x = 0; // Slight angle to see the top
