@@ -21,7 +21,21 @@
 
 #include "common.h"
 
+#define FP 8
+#define fp_mul(a,b) (((a)*(b))>>FP)
+
 extern void *   memcpy (void *__restrict, const void *__restrict, size_t);;
+
+#ifdef FAST_DIV
+static uint16_t div_lutr[1025];
+static void init_div_lutr_fast(void) {
+    int i;
+    div_lutr[0] = 0;
+    for(i=1;i<1025;i++){
+        div_lutr[i] = (1<<FP)/i;
+    }
+}
+#endif
 
 #if PLATFORM == UNIX
 #include <SDL/SDL.h>
@@ -89,6 +103,8 @@ void Empty_Palette() {};
 
 int16_t framebuffer_game[256*240/2];
 
+#define my_memcpy32 game_memcpy32
+
 #ifdef DEBUGFPS
 #define REFRESH_SCREEN(index, length) \
 	eris_king_set_kram_write(index, 1); \
@@ -124,6 +140,8 @@ uint8_t bg_title[SCREEN_WIDTH * SCREEN_HEIGHT];
 SDL_Surface* screen;
 SDL_Surface* texture_surface;
 
+#define my_memcpy32 game_memcpy32
+
 #elif PLATFORM == CASLOOPY
 
 #define FB_SIZE 1 // 1 for 16bpp, 2 for 8bpp sized framebuffer. it needs double because of indexing
@@ -148,12 +166,14 @@ int16_t framebuffer_game[256*240/2];
 
 #define PLAY_SFX(channel, index)
 
+#define my_memcpy32 game_memcpy32
+
 #elif PLATFORM == CD32
 
+int __nocommandline=1;
+
 #define FB_SIZE 2 // 1 for 16bpp, 2 for 8bpp sized framebuffer. it needs double because of indexing
-
 #include "cd32.h"
-
 
 void fadeInPalette(unsigned char pal[], DEFAULT_INT sizep){};
 void fadeOutPalette(unsigned char pal[], DEFAULT_INT sizep){};
@@ -224,11 +244,88 @@ uint8_t bg_title[SCREEN_WIDTH * SCREEN_HEIGHT];
 
 #define PLAY_SFX(channel, index)
 
+
+// ================================
+// Blitter-Based Memory Copy Function
+// ================================
+#include <hardware/custom.h>
+extern struct Custom custom;
+
+#define ASC  0  // Ascending copy direction
+#define DESC 1  // Descending copy direction
+
+void Setup_Blit()
+{
+    // Initialize blitter configuration once
+    custom.bltcon0 = 0x0FE0;   // Use all channels, no shifts
+    custom.bltcon1 = 0x0000;   // No shifts
+    custom.bltafwm = 0xFFFF;   // Set foreground and background mask
+    custom.bltalwm = 0xFFFF;
+
+    // Use a 32-bit zero to set bltamod and bltbmod together
+    const uint32_t ZERO_MOD = 0x00000000;
+    *((volatile uint32_t*)&custom.bltamod) = ZERO_MOD;  // Sets bltamod and bltbmod to 0
+
+    // Similarly, set bltcmod and bltdmod together
+    *((volatile uint32_t*)&custom.bltcmod) = ZERO_MOD;  // Sets bltcmod and bltdmod to 0	
+}
+
+#define DMA_BBUSY  0x4000
+
+static inline void blit_memcpy(void* dest, const void* src, const size_t size)
+{
+    // Constants
+    const uint16_t BLIT_WIDTH_COPY = 126;    // 63 * 2 bytes
+    const uint16_t PRECALC_SIZE = 0x7F;  // (1 << 6) | (63 & 0x3F) = 127
+    
+    // const UWORD NUM_BLOCKS = size / BLIT_WIDTH_COPY;
+    register uint16_t blocks = (size >> 7) + 1;
+
+    // Loop through each block
+    while (blocks--)
+    {
+        custom.bltapt = src;
+        custom.bltbpt = src;
+        custom.bltcpt = src;
+        custom.bltdpt = dest;
+
+        custom.bltsize = PRECALC_SIZE;
+
+        src += BLIT_WIDTH_COPY;
+        dest += BLIT_WIDTH_COPY;
+
+        WaitBlit();
+    }
+}
+
+static inline void VFastCopy128(uint8_t *dst, uint8_t *src, const uint16_t size) {
+    __asm__ __volatile__ (
+        "move.w %[size], %%d0\n\t"
+        "1:\n\t"
+        "move.l (%%a0)+, (%%a1)+\n\t"
+        "move.l (%%a0)+, (%%a1)+\n\t"
+        "move.l (%%a0)+, (%%a1)+\n\t"
+        "move.l (%%a0)+, (%%a1)+\n\t"
+        "move.l (%%a0)+, (%%a1)+\n\t"
+        "move.l (%%a0)+, (%%a1)+\n\t"
+        "move.l (%%a0)+, (%%a1)+\n\t"
+        "move.l (%%a0)+, (%%a1)+\n\t"
+        "dbra %%d0, 1b\n\t"
+        :
+        : [size] "r" (size), "a" (src), "a" (dst)
+        : "d0", "memory"
+    );
+}
+
+//#define my_memcpy32(a,b,c) VFastCopy128(a,b,(c/32)-1)
+
+#define my_memcpy32 blit_memcpy
+
 #else
 #error "No Platform set!"
 #endif
 
-static inline void my_memcpy32(void *dest, const void *src, size_t n) 
+static inline void game_memcpy32(void *dest, const void *src, size_t n) 
 {
     int32_t *d = (int32_t*)dest;
     const int32_t *s = (const int32_t*)src;
@@ -377,10 +474,16 @@ static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D 
             DEFAULT_INT dx = pB->x - pA->x;
             DEFAULT_INT du = pB->u - pA->u;
 			DEFAULT_INT dv = pB->v - pA->v;
+#ifdef FAST_DIV
+			int32_t rdy = div_lutr[dy];
+			edge->x_step = fp_mul((INT_TO_FIXED(pB->x - pA->x)) << FP, rdy) >> FP;
+            edge->u_step = fp_mul((pB->u - pA->u) << FP, rdy) >> FP;
+            edge->v_step = fp_mul((pB->v - pA->v) << FP, rdy) >> FP;
+#else
             edge->x_step = Division(INT_TO_FIXED(pB->x - pA->x) , dy);
             edge->u_step = Division(pB->u - pA->u , dy);
             edge->v_step = Division(pB->v - pA->v , dy);
-
+#endif
         } else {
             edge->y_start = pB->y;
             edge->y_end = pA->y;
@@ -392,9 +495,17 @@ static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D 
 			DEFAULT_INT dx = pA->x - pB->x;
 			DEFAULT_INT du = pA->u - pB->u;
 			DEFAULT_INT dv = pA->v - pB->v;
+			
+#ifdef FAST_DIV
+			int32_t rdy = div_lutr[dy];
+			edge->x_step = fp_mul((INT_TO_FIXED(pA->x - pB->x)) << FP, rdy) >> FP;
+            edge->u_step = fp_mul((pA->u - pB->u) << FP, rdy) >> FP;
+            edge->v_step = fp_mul((pA->v - pB->v) << FP, rdy) >> FP;
+#else
 			edge->x_step = Division(INT_TO_FIXED(pA->x - pB->x), dy);
             edge->u_step = Division(pA->u - pB->u , dy);
             edge->v_step = Division(pA->v - pB->v , dy);
+#endif
         }
     }
 	
@@ -458,8 +569,16 @@ static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D 
         DEFAULT_INT dx = xe - xs;
         if (dx == 0) continue;  // Avoid division by zero
 
-        DEFAULT_INT du = Division(ue - us, dx);
+
+#ifdef FAST_DIV
+		int32_t rdx = div_lutr[dx];
+		DEFAULT_INT du = fp_mul((ue - us) << FP, rdx) >> FP;
+		DEFAULT_INT dv = fp_mul((ve - vs) << FP, rdx) >> FP;		
+#else
+		DEFAULT_INT du = Division(ue - us, dx);
 		DEFAULT_INT dv = Division(ve - vs, dx);
+#endif   
+		
 		drawScanline(xs, xe, us, vs, du, dv, y, tetromino_type);
     }
 }
@@ -871,8 +990,6 @@ void merge_piece() {
     clear_lines();
 }
 
-uint8_t color = 0;
-
 // Function to draw text
 void PrintText(const char* str, DEFAULT_INT x, DEFAULT_INT y) 
 {
@@ -1263,7 +1380,13 @@ void Game_Switch(DEFAULT_INT state)
 			eris_low_cdda_set_volume(63,63);
 #endif
 #endif
-			my_memcpy32(GAME_FRAMEBUFFER, bg_title, SCREEN_WIDTH * SCREEN_HEIGHT);
+
+			my_memcpy32(GAME_FRAMEBUFFER, bg_title, (SCREEN_WIDTH * SCREEN_HEIGHT));
+			
+			// Text routines do have in fact a significant performance penalty on Amiga CD32 since they are being drawn every frame due to overlapping with 3D cube
+#ifdef FAST_DRAWING
+			PrintText("Press Start to Play", SCREEN_WIDTH_HALF - 80, 190);
+#endif
 			REFRESH_SCREEN(0, SCREEN_WIDTH * SCREEN_HEIGHT);
 
 			fadeInPalette(gamepal, 256);
@@ -1532,6 +1655,8 @@ DEFAULT_INT Init_video_game()
 	LoadFile_tobuffer("bg320.raw", bg_game);
 	LoadFile_tobuffer("textures.raw", texture);
 	
+	Setup_Blit();
+	
 #else
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         fprintf(stderr, "SDL could not initialize! SDL_Error: %s\n", SDL_GetError());
@@ -1594,14 +1719,18 @@ DEFAULT_INT Init_video_game()
 	return 0;
 }
 
-DEFAULT_INT main() 
+int main() 
 {
 	if (Init_video_game() == 1)
 	{
 		return 0;
 	}
 	
+#ifdef FAST_DIV
+	init_div_lutr_fast();
+#else
 	initDivs();
+#endif
 
     // Initialize game state
     memset(grid, 0, sizeof(grid));
@@ -1836,12 +1965,13 @@ DEFAULT_INT main()
 #ifdef FORCE_FULLSCREEN_DRAWS
 				my_memcpy32(GAME_FRAMEBUFFER, bg_title, SCREEN_WIDTH * SCREEN_HEIGHT);
 #else
+				#warning "CD32"
 				my_memcpy32(GAME_FRAMEBUFFER + (SCREEN_WIDTH * 45  * FB_SIZE), bg_title + (SCREEN_WIDTH * 45  * FB_SIZE), SCREEN_WIDTH * 100);
 #endif
 				// Draw rotating cube with updated position
 				draw_title_cube(title_cube_rotation_x, title_cube_rotation_y, title_cube_rotation_z, title_cube_position_x, -20, title_cube_position_z);
 
-
+#ifndef FAST_DRAWING
 				if (blink_counter < 60)
 				{
 					PrintText("Press Start to Play", SCREEN_WIDTH_HALF - 80, 170);
@@ -1850,7 +1980,8 @@ DEFAULT_INT main()
 				{
 					blink_counter = 0;
 				}
-				
+#endif
+
 				if (BUTTON_PRESSED(start_button)) {
 					Game_Switch(GAME_STATE_MENU);
 				}

@@ -15,7 +15,7 @@ static inline void SetPixel16(int32_t color) {
 //-----------------------------------------------------------------------------
 // 1) A simpler fetch function that only does a texture16[index] lookup
 //-----------------------------------------------------------------------------
-static inline int16_t fetchTextureColor16(register int16_t *texture16, register int32_t index) {
+static inline uint16_t fetchTextureColor16(register uint16_t *texture16, register int32_t index) {
     return texture16[index];
 }
 
@@ -31,7 +31,7 @@ static inline void drawScanline(int32_t xs, int32_t xe,
                                 DEFAULT_INT tetromino_type)
 {
 	// Pre-calculate as much as possible outside the inner loop
-	DEFAULT_INT *texture16 = (int16_t *)texture;
+	uint16_t *texture16 = (uint16_t *)texture;
    
 	DEFAULT_INT tile0 = tetromino_type * 2;      // darker tile
 	DEFAULT_INT tile1 = tile0 + 1;               // brighter tile
@@ -60,11 +60,8 @@ static inline void drawScanline(int32_t xs, int32_t xe,
          DEFAULT_INT offset = (local_v * 32 + tex_u) >> 1;
 
         // Grab the color from the texture
-		DEFAULT_INT color = fetchTextureColor16(texture16, baseIndex + offset);
+		uint16_t color = fetchTextureColor16(texture16, baseIndex + offset);
 
-        // Advance the texture coordinates for the *next pixel* in this pair
-        u += du;
-        v += dv;
 
         // Write color to framebuffer
         SetPixel16(color);
@@ -72,8 +69,9 @@ static inline void drawScanline(int32_t xs, int32_t xe,
         // Go to the next 16-bit cell in the framebuffer
         fb_ptr++;
 
-        // Advance the texture coordinates for the next iteration
         u += du;
+        u += du;
+        v += dv;
         v += dv;
 
         num_pairs--;

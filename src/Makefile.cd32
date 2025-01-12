@@ -2,21 +2,21 @@ CC = m68k-amigaos-gcc -m68020
 EXE = game
 
 # Compiler flags
-CFLAGS  = -Os -fomit-frame-pointer -mcpu=68020 -mtune=68020 -flto -I. -Isrc -mxgot -fipa-pta -DPLATFORM=4 -DBY16=1 -DFAST_DRAWING 
-CFLAGS += -finline-limit=8 -ffast-math -fgcse-sm -fgcse-lm -fgcse-las -freorder-blocks-and-partition
+CFLAGS  = -Os -fomit-frame-pointer -mcpu=68020 -mtune=68020 -flto -I. -Isrc -mno-xgot -fipa-pta -DPLATFORM=4 -DBY16=1 -DFAST_DRAWING -DFAST_DIV
+CFLAGS += -finline-limit=4 -ffast-math -fgcse-sm -fgcse-lm -fgcse-las -freorder-blocks-and-partition
 CFLAGS += -fno-common -fno-stack-protector -fno-guess-branch-probability -fno-caller-saves -fno-tree-loop-if-convert -fno-regmove
 
 # Assembly generation flags (verbose and annotated)
-ASMFLAGS = -Os -fomit-frame-pointer -mcpu=68020 -mtune=68020 -I. -Isrc -mxgot -fipa-pta -DPLATFORM=4 -DBY16=1 -DFAST_DRAWING 
+ASMFLAGS = -Ofast -fomit-frame-pointer -mcpu=68020 -mtune=68020 -I. -Isrc -mxgot -fipa-pta -DPLATFORM=4 -DBY16=1 -DFAST_DRAWING 
 ASMFLAGS += -finline-limit=8 -ffast-math -fgcse-sm -fgcse-lm -fgcse-las -freorder-blocks-and-partition
 ASMFLAGS += -fno-common -fno-stack-protector -fno-guess-branch-probability -fno-caller-saves -fno-tree-loop-if-convert -fno-regmove
 ASMFLAGS += -S -fverbose-asm -g
 
 STRIP = $(HOST)strip
 
-SRC = cd32.c src/main.c src/common.c src/font_drawing.c
+SRC = cd32.c src/main.c src/common.c src/font_drawing.c 
 
-LDFLAGS = -noixemul -lc -lgcc -lamiga -lm -Wl,--as-needed -Wl,--gc-sections -s -flto
+LDFLAGS = -noixemul -lc -lgcc -lamiga -Wl,--as-needed -Wl,--gc-sections -s -flto
 
 OBJ = $(SRC:.c=.o)
 ASM = $(SRC:.c=.s)
