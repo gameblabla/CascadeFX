@@ -9,7 +9,7 @@
 #define _16BITS_WRITES
 //#define BIGENDIAN_TEXTURING 1
 //#define FORCE_FULLSCREEN_DRAWS 1
-//#define DEBUGFPS 1
+#define DEBUGFPS 1
 
 #include <stdint.h>
 #include <limits.h>
@@ -48,7 +48,9 @@ const float real_FPS = 1000/FPS_VIDEO;
 void fadeInPalette(unsigned char pal[], DEFAULT_INT sizep){};
 void fadeOutPalette(unsigned char pal[], DEFAULT_INT sizep){};
 void Empty_Palette() {};
+
 #endif
+
 
 #if PLATFORM == NECPCFX
 #include "fastking.h"
@@ -93,6 +95,8 @@ void Empty_Palette() {};
 
 #if PLATFORM == NECPCFX
 
+uint8_t* texture_actual;
+
 #define FB_SIZE 1 // 1 for 16bpp, 2 for 8bpp sized framebuffer. it needs double because of indexing
 
 #define BIGENDIAN_TEXTURING 1
@@ -104,6 +108,8 @@ void Empty_Palette() {};
 int16_t framebuffer_game[256*240/2];
 
 #define my_memcpy32 game_memcpy32
+
+#define TEXTURE_SIZE_EACH ((32*16))
 
 #ifdef DEBUGFPS
 #define REFRESH_SCREEN(index, length) \
@@ -117,6 +123,8 @@ int16_t framebuffer_game[256*240/2];
 #endif
 	
 #elif PLATFORM == UNIX
+
+uint8_t* texture_actual;
 
 #define FB_SIZE 1 // 1 for 16bpp, 2 for 8bpp sized framebuffer. it needs double because of indexing
 
@@ -142,7 +150,11 @@ SDL_Surface* texture_surface;
 
 #define my_memcpy32 game_memcpy32
 
+#define TEXTURE_SIZE_EACH 32*32
+
 #elif PLATFORM == CASLOOPY
+
+uint16_t* texture_actual;
 
 #define FB_SIZE 1 // 1 for 16bpp, 2 for 8bpp sized framebuffer. it needs double because of indexing
 
@@ -168,7 +180,11 @@ int16_t framebuffer_game[256*240/2];
 
 #define my_memcpy32 game_memcpy32
 
+#define TEXTURE_SIZE_EACH 32*16
+
 #elif PLATFORM == CD32
+
+uint16_t* texture_actual;
 
 int __nocommandline=1;
 
@@ -244,6 +260,8 @@ uint8_t bg_title[SCREEN_WIDTH * SCREEN_HEIGHT];
 
 #define PLAY_SFX(channel, index)
 
+#define TEXTURE_SIZE_EACH 32*32
+
 
 // ================================
 // Blitter-Based Memory Copy Function
@@ -270,7 +288,7 @@ void Setup_Blit()
     *((volatile uint32_t*)&custom.bltcmod) = ZERO_MOD;  // Sets bltcmod and bltdmod to 0	
 }
 
-#define DMA_BBUSY  0x4000
+#define DMAF_BLTDONE 0x4000
 
 static inline void blit_memcpy(void* dest, const void* src, const size_t size)
 {
@@ -284,6 +302,18 @@ static inline void blit_memcpy(void* dest, const void* src, const size_t size)
     // Loop through each block
     while (blocks--)
     {
+		//WaitBlit();
+		//while(custom.dmaconr & DMAF_BLTDONE);
+		__asm__ volatile (
+			"1:\n\t"                 // Label for the loop
+			"btst   #6, #DFF002\n\t" // Test bit 6 of DMACONR (at fixed address 0xDFF002)
+			"bne.s  1b"              // Branch back to label 1 if the bit is set
+			:                        // No output operands
+			:                        // No input operands
+			: "cc"                   // Clobbers condition codes
+		);
+
+		
         custom.bltapt = src;
         custom.bltbpt = src;
         custom.bltcpt = src;
@@ -293,8 +323,6 @@ static inline void blit_memcpy(void* dest, const void* src, const size_t size)
 
         src += BLIT_WIDTH_COPY;
         dest += BLIT_WIDTH_COPY;
-
-        WaitBlit();
     }
 }
 
@@ -317,9 +345,9 @@ static inline void VFastCopy128(uint8_t *dst, uint8_t *src, const uint16_t size)
     );
 }
 
-//#define my_memcpy32(a,b,c) VFastCopy128(a,b,(c/32)-1)
+#define my_memcpy32(a,b,c) VFastCopy128(a,b,(c/32)-1)
 
-#define my_memcpy32 blit_memcpy
+//#define my_memcpy32 blit_memcpy
 
 #else
 #error "No Platform set!"
@@ -397,7 +425,7 @@ typedef struct {
     DEFAULT_INT type;
     DEFAULT_INT rotation;
     DEFAULT_INT x, y;
-} Piece;
+} Piece __attribute__((aligned(4)));;
 
 Piece current_piece;
 
@@ -429,7 +457,7 @@ static inline DEFAULT_INT compare_faces(const void *a, const void *b) {
 #endif
 
 
-static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D p3, DEFAULT_INT tetromino_type) 
+static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D p3) 
 {
     // Use the vertices as given
     Point2D points_array[4] = { p0, p1, p2, p3 };
@@ -578,8 +606,8 @@ static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D 
 		DEFAULT_INT du = Division(ue - us, dx);
 		DEFAULT_INT dv = Division(ve - vs, dx);
 #endif   
-		
-		drawScanline(xs, xe, us, vs, du, dv, y, tetromino_type);
+
+		drawScanline(xs, xe, us, vs, du, dv, y);
     }
 }
 
@@ -606,12 +634,14 @@ static inline void draw_sorted_faces()
             face->tetromino_type
         );
         #endif
+        
+        texture_actual = texture + (face->tetromino_type * (TEXTURE_SIZE_EACH));
+        
 		drawTexturedQuad(
 			face->projected_vertices[0],
 			face->projected_vertices[1],
 			face->projected_vertices[2],
-			face->projected_vertices[3],
-			face->tetromino_type
+			face->projected_vertices[3]
 		);
 
     }
@@ -652,22 +682,16 @@ Point3D rotateZ(Point3D p, DEFAULT_INT angle) {
     return (Point3D){x, y, p.z};
 }
 
-#ifdef FAST_DRAWING
-/* Orthographic Projection */
-static inline Point2D project(Point3D p, DEFAULT_INT u, DEFAULT_INT v) {
-    DEFAULT_INT x = -p.x;
-    DEFAULT_INT y = -p.y;
-    return (Point2D){x, y, u, v};
-}
-#else
 Point2D project(Point3D p, DEFAULT_INT u, DEFAULT_INT v) {
     DEFAULT_INT distance = PROJECTION_DISTANCE;
-    DEFAULT_INT factor = Division(INT_TO_FIXED(distance) , (distance - p.z));
+    
+	DEFAULT_INT factor = Division(INT_TO_FIXED(distance) , (distance - p.z));
+    
     int32_t x = FIXED_TO_INT(MULTIPLY(p.x , factor));
     int32_t y = FIXED_TO_INT(MULTIPLY(p.y , factor));
+
     return (Point2D){x, y, u, v};
 }
-#endif
 
 
 // Structure to store previous piece position
@@ -835,7 +859,7 @@ void undraw_previous_piece() {
         }
     }
     
-#if PLATFORM == NECPCFX
+#if PLATFORM == NECPCFX || PLATFORM == CASLOOPY
     min_x-= 1;
 #endif
     
@@ -1163,7 +1187,13 @@ void draw_title_cube(DEFAULT_INT angle_x, DEFAULT_INT angle_y, DEFAULT_INT angle
         transformed_vertices[i] = v;
 
         // Project vertices and store the projected points
-        projected_points[i] = project(v, 0, 0); // Texture coordinates will be assigned later
+#ifdef FAST_DRAWING
+		projected_points[i].x = -v.x;
+		projected_points[i].y = -v.y;
+#else
+		projected_points[i] = project(v, 0, 0); // Texture coordinates will be assigned later
+#endif
+        
         projected_points[i].x += SCREEN_WIDTH_HALF;
         projected_points[i].y += SCREEN_HEIGHT_HALF;
     }
@@ -1255,7 +1285,7 @@ void draw_title_cube(DEFAULT_INT angle_x, DEFAULT_INT angle_y, DEFAULT_INT angle
         p3.v = v3;
 
         // Draw the face
-        drawTexturedQuad(p0, p1, p2, p3, 1);
+        drawTexturedQuad(p0, p1, p2, p3);
     }
 }
 
@@ -1360,6 +1390,10 @@ void Game_Switch(DEFAULT_INT state)
 	switch(state)
 	{
 		case GAME_STATE_TITLE:
+		
+			// Set active texture to index 1 texture
+			texture_actual = texture + (1 * (TEXTURE_SIZE_EACH));
+		
 			Empty_Palette();
 		
 			z_counter = 0;
@@ -1728,9 +1762,8 @@ int main()
 	
 #ifdef FAST_DIV
 	init_div_lutr_fast();
-#else
-	initDivs();
 #endif
+	initDivs();
 
     // Initialize game state
     memset(grid, 0, sizeof(grid));
@@ -1965,7 +1998,6 @@ int main()
 #ifdef FORCE_FULLSCREEN_DRAWS
 				my_memcpy32(GAME_FRAMEBUFFER, bg_title, SCREEN_WIDTH * SCREEN_HEIGHT);
 #else
-				#warning "CD32"
 				my_memcpy32(GAME_FRAMEBUFFER + (SCREEN_WIDTH * 45  * FB_SIZE), bg_title + (SCREEN_WIDTH * 45  * FB_SIZE), SCREEN_WIDTH * 100);
 #endif
 				// Draw rotating cube with updated position
@@ -2007,7 +2039,7 @@ int main()
 #ifdef FORCE_FULLSCREEN_DRAWS
 				my_memcpy32(GAME_FRAMEBUFFER, bg_title, SCREEN_WIDTH * SCREEN_HEIGHT);
 #else
-				my_memcpy32(GAME_FRAMEBUFFER + (SCREEN_WIDTH * 45 * FB_SIZE), bg_title + (SCREEN_WIDTH * 45 * FB_SIZE), SCREEN_WIDTH * 48);
+				my_memcpy32(GAME_FRAMEBUFFER + (SCREEN_WIDTH * 90 * FB_SIZE), bg_title + (SCREEN_WIDTH * 90 * FB_SIZE), SCREEN_WIDTH * 48);
 #endif
 
 				switch(menu_selection)
@@ -2236,7 +2268,7 @@ int main()
 			#ifdef DEBUGFPS
 			print_at(0, 1, 12, myitoa(getFps()));
 			#endif
-			vsync(0);
+			//vsync(0);
 			++nframe;
 		#elif PLATFORM == CASLOOPY
 			CopyFrameBuffer((int*) framebuffer_game, (int*) VDP_BITMAP_VRAM );

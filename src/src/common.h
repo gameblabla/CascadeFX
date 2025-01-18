@@ -48,15 +48,15 @@ typedef struct {
 	DEFAULT_INT v_step;
 } EdgeData;
 
-#define DIV_TAB_SIZE 512
+#define DIV_TAB_SIZE 1024
 #define DIV_TAB_HALF DIV_TAB_SIZE/2
 #define DIV_TAB_SHIFT 16
 extern int32_t divTab[DIV_TAB_SIZE]; // This needs to be 32-bits
 
-extern const int32_t puzzle_pieces[7 * 4 * 4 * 4];
-extern const DEFAULT_INT cube_texcoords_template[24 * 2];
-extern const DEFAULT_INT cube_faces_template[6 * 4];
-extern const Point3D cube_vertices_template[8];
+extern const int32_t puzzle_pieces[7 * 4 * 4 * 4]  __attribute__((aligned(4)));
+extern const DEFAULT_INT cube_texcoords_template[24 * 2]  __attribute__((aligned(32)));
+extern const DEFAULT_INT cube_faces_template[6 * 4]  __attribute__((aligned(32)));
+extern const Point3D cube_vertices_template[8]  __attribute__((aligned(32)));
 
 /* Puzzle mode specific */
 
@@ -69,10 +69,10 @@ extern const Point3D cube_vertices_template[8];
 
 typedef struct {
     DEFAULT_INT num_pieces;
-    DEFAULT_INT piece_sequence[10]; // Adjust size as needed
-} Puzzle;
+    DEFAULT_INT piece_sequence[15]; // Adjust size as needed
+} Puzzle  __attribute__((aligned(4)));
 
-extern const DEFAULT_INT initial_grids[MAX_PUZZLES * GRID_HEIGHT * GRID_WIDTH];
+extern const DEFAULT_INT initial_grids[MAX_PUZZLES * GRID_HEIGHT * GRID_WIDTH]  __attribute__((aligned(4)));
 
 extern int32_t MULTIPLY(DEFAULT_INT a, DEFAULT_INT b);
 

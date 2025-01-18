@@ -1,39 +1,45 @@
-static inline int16_t fetchTextureColor(int32_t u, int32_t v, int tetromino_type) {
+static inline uint32_t fetchTextureColor(int32_t u, int32_t v) {
     int tex_u = ((u >> 8) & 31);
-    int tex_v_full = ((v >> 8) & 31);
-    int local_v = tex_v_full & 0x0F;
-    bool is_brighter = tex_v_full >= 16;
-    int tile_index = tetromino_type * 2 + (is_brighter ? 1 : 0);
-    //if (tile_index >= 14) tile_index = 0;
+    int tex_v = ((v >> 8) & 31);
     
     // Calculate the index in the texture array
-    int index = tile_index * 32 * 16 + local_v * 32 + tex_u;
+    uint32_t texture_index = tex_v * 32 + tex_u;  // Texture is 32x32
     
     // Since texture is stored as uint16_t but contains 8-bit values, we access it as uint16_t*
-    int8_t *texture16 = (int8_t *)texture;
+    int8_t *texture16 = (int8_t *)texture_actual;
     
     // Extract the 8-bit value from the 16-bit storage
-    int16_t color = (int16_t)(texture16[index] ); // Assuming lower byte contains the color index
+    int16_t color = (int16_t)(texture16[texture_index] ); // Assuming lower byte contains the color index
     
     return color;
 }
 
-static inline int16_t fetchTextureColor16(int32_t u, int32_t v, int tetromino_type) {
-    int32_t tex_u = ((u >> 8) & 31);
-    int32_t tex_v_full = ((v >> 8) & 31);
-    bool is_brighter = tex_v_full >= 16;
-    int32_t local_v = tex_v_full & 0x0F;
-    int tile_index = tetromino_type * 2 + (is_brighter ? 1 : 0);
-	//if (tile_index >= 14) tile_index = 0;
+static inline uint16_t fetchTextureColor16(DEFAULT_INT u, DEFAULT_INT v, DEFAULT_INT du, DEFAULT_INT dv) {
+	
+    // Convert fixed-point texture coordinates to integer
+    uint8_t tex_u1 = (u >> 8) & 31;  // First pixel's u coordinate
+    uint8_t tex_v1 = (v >> 8) & 31;  // First pixel's v coordinate
 
-    // Calculate the index in the texture array
-    int index = (tile_index * 32 * 16 + local_v * 32 + tex_u)/2;
+    // Calculate the second pixel's texture coordinates
+    uint8_t tex_u2 = ((u + du) >> 8) & 31;  // Second pixel's u coordinate
+    uint8_t tex_v2 = ((v + dv) >> 8) & 31;  // Second pixel's v coordinate
 
-	int16_t *texture16 = (int16_t *)texture;
-    int16_t color = (int16_t)(texture16[index] ); // Assuming lower byte contains the color index
-    
-    return color;
+    // Calculate the indices into the texture array
+    uint32_t texture_index1 = tex_v1 * 32 + tex_u1;  // First pixel's index
+    uint32_t texture_index2 = tex_v2 * 32 + tex_u2;  // Second pixel's index
+
+    // Fetch the two 8-bit colors from the texture
+    uint8_t color1 = texture_actual[texture_index1];  // First pixel's color
+    uint8_t color2 = texture_actual[texture_index2];  // Second pixel's color
+
+    // Pack the two 8-bit colors into a 16-bit value
+#ifdef BIGENDIAN_TEXTURING
+    return (color1 << 8) | color2;  // Big-endian: color1 in MSB, color2 in LSB
+#else
+    return (color2 << 8) | color1;  // Little-endian: color2 in MSB, color1 in LSB
+#endif
 }
+
 
 // Global pointer to the current framebuffer position
 static int16_t *fb_ptr;
@@ -61,14 +67,14 @@ static inline void SetPixel8_xe(int32_t color) {
 
 // Function to draw a scanline using pointer arithmetic
 static inline void drawScanline(int32_t xs, int32_t xe, int32_t u, int32_t v,
-    int32_t du, int32_t dv, int y, int tetromino_type) {
+    int32_t du, int32_t dv, int y) {
 
     // Initialize framebuffer pointer to the starting position
     fb_ptr = (int16_t *)framebuffer_game + y * (SCREEN_WIDTH / 2) + (xs / 2);
 
     // Handle the first pixel if xs is odd
     if (xs & 1) {
-        int32_t color = fetchTextureColor(u, v, tetromino_type);
+        int32_t color = fetchTextureColor(u, v);
         u += du;
         v += dv;
 
@@ -86,11 +92,9 @@ static inline void drawScanline(int32_t xs, int32_t xe, int32_t u, int32_t v,
     // Use a decrementing loop for processing pixel pairs
     while(num_pairs)
     {
-        int16_t colors = fetchTextureColor16(u, v, tetromino_type);
-        u += du;
-        v += dv;
-        u += du;
-        v += dv;
+        int16_t colors = fetchTextureColor16(u, v, du, dv);
+        u += du * 2;
+        v += dv * 2;
         
         // Set two pixels at once and advance the pointer
         SetPixel16(colors);
@@ -100,7 +104,7 @@ static inline void drawScanline(int32_t xs, int32_t xe, int32_t u, int32_t v,
 
     // Handle the last pixel if xe is odd
     if (xs == xe) {
-        int32_t color = fetchTextureColor(u, v, tetromino_type);
+        int32_t color = fetchTextureColor(u, v);
 
         // Modify the upper byte of the current 16-bit word
         SetPixel8_xe(color);

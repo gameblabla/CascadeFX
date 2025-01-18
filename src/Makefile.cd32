@@ -3,8 +3,6 @@ EXE = game
 
 # Compiler flags
 CFLAGS  = -Os -fomit-frame-pointer -mcpu=68020 -mtune=68020 -flto -I. -Isrc -mno-xgot -fipa-pta -DPLATFORM=4 -DBY16=1 -DFAST_DRAWING -DFAST_DIV
-CFLAGS += -finline-limit=4 -ffast-math -fgcse-sm -fgcse-lm -fgcse-las -freorder-blocks-and-partition
-CFLAGS += -fno-common -fno-stack-protector -fno-guess-branch-probability -fno-caller-saves -fno-tree-loop-if-convert -fno-regmove
 
 # Assembly generation flags (verbose and annotated)
 ASMFLAGS = -Ofast -fomit-frame-pointer -mcpu=68020 -mtune=68020 -I. -Isrc -mxgot -fipa-pta -DPLATFORM=4 -DBY16=1 -DFAST_DRAWING 

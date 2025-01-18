@@ -21,7 +21,7 @@ void initDivs()
 }
 
 // Puzzle pieces (shapes) as a 1D array
-const int32_t puzzle_pieces[7 * 4 * 4 * 4] = {
+const int32_t puzzle_pieces[7 * 4 * 4 * 4] __attribute__((aligned(4))) = {
     // Flattened data
     // Type 0 (I)
     // Rotation 0
@@ -90,7 +90,7 @@ const int32_t puzzle_pieces[7 * 4 * 4 * 4] = {
 
 
 // Updated cube texture coordinates template with 24 entries
-ORAM_DATA const DEFAULT_INT cube_texcoords_template[24 * 2] = {
+ORAM_DATA const DEFAULT_INT cube_texcoords_template[24 * 2]  __attribute__((aligned(32))) = {
     // Front face (indices 0 to 7)
     0<<8, 0<<8,    // Vertex 0
     31<<8, 0<<8,   // Vertex 1
@@ -123,7 +123,7 @@ ORAM_DATA const DEFAULT_INT cube_texcoords_template[24 * 2] = {
     0<<8, 0<<8     // Vertex 23
 };
 
-ORAM_DATA const DEFAULT_INT cube_faces_template[6 * 4] = {
+ORAM_DATA const DEFAULT_INT cube_faces_template[6 * 4]  __attribute__((aligned(32))) = {
     0, 1, 2, 3,   // Front face
     5, 4, 7, 6,   // Back face
     4, 0, 3, 7,   // Left face
@@ -134,7 +134,7 @@ ORAM_DATA const DEFAULT_INT cube_faces_template[6 * 4] = {
 
 
 // Common cube data
-ORAM_DATA const Point3D cube_vertices_template[8] = {
+ORAM_DATA const Point3D cube_vertices_template[8]  __attribute__((aligned(32))) = {
     {-DISTANCE_CUBE,  DISTANCE_CUBE,  DISTANCE_CUBE}, // 0
     { DISTANCE_CUBE,  DISTANCE_CUBE,  DISTANCE_CUBE}, // 1
     { DISTANCE_CUBE, -DISTANCE_CUBE,  DISTANCE_CUBE}, // 2
@@ -147,7 +147,7 @@ ORAM_DATA const Point3D cube_vertices_template[8] = {
 
 
 // Grids for puzzle mode
-const DEFAULT_INT initial_grids[MAX_PUZZLES * GRID_HEIGHT * GRID_WIDTH] = {
+const DEFAULT_INT initial_grids[MAX_PUZZLES * GRID_HEIGHT * GRID_WIDTH]  __attribute__((aligned(4))) = {
     // Puzzle 1 grid data
     // Rows 0-9: all zeros
     ROW_ZEROS, // Row 0

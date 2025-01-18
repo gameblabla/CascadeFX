@@ -1,76 +1,54 @@
 
+// Global pointer to the current framebuffer position
+static int16_t *fb_ptr;
+
+// Function to write a 16-bit word to the framebuffer and advance the pointer
+static inline void SetPixel16(int32_t color) {
+    *fb_ptr = (int16_t)color;
+}
+
+
 // Helper function to fetch the texture color
-static inline uint32_t fetchTextureColor(int32_t u, int32_t v, int tetromino_type) {
-    uint8_t tex_u = ((u >> 8) & 31);
-    uint8_t tex_v_full = ((v >> 8) & 31);
-    bool is_brighter = tex_v_full >= 16;
-    uint8_t local_v = tex_v_full & 0x0F;
-    int tile_index = tetromino_type * 2 + (is_brighter ? 1 : 0);
-    //if (tile_index >= 14) tile_index = 0;
-#if defined(_16BITS_WRITES)
-    // Since texture is stored as uint16_t but contains 8-bit values, we access it as uint16_t*
-    uint8_t *texture16 = (uint8_t *)texture;
-    
-    // Extract the 8-bit value from the 16-bit storage
-    uint32_t color = (uint8_t)(texture16[tile_index * 32 * 16 + local_v * 32 + tex_u] ); // Assuming lower byte contains the color index
-    return color;
-#else
-    return texture[tile_index * 32 * 16 + local_v * 32 + tex_u];
-#endif
+static inline uint32_t fetchTextureColor(int32_t u, int32_t v, int32_t du, int32_t dv) {
+    // Convert fixed-point texture coordinates to integer in [0..31]
+    int32_t tex_u1 = (u >> 8) & 31;
+    int32_t tex_v1 = (v >> 8) & 31;
+
+    int32_t tex_u2 = ((u + du) >> 8) & 31;
+    int32_t tex_v2 = ((v + dv) >> 8) & 31;
+
+    // Reinterpret texture as a uint8_t array for direct pixel access
+    uint8_t* texture8 = (uint8_t*)texture_actual;
+
+    // Calculate the 1D indices for each texel
+    uint32_t texture_index1 = tex_v1 * 32 + tex_u1;
+    uint32_t texture_index2 = tex_v2 * 32 + tex_u2;
+
+    // Fetch the two colors directly from the reinterpreted texture
+    uint8_t color1 = texture8[texture_index1];
+    uint8_t color2 = texture8[texture_index2];
+
+    // Pack the two 8-bit colors into a single 16-bit value
+    return (uint16_t)((color1 << 8) | color2);
 }
 
 // Updated drawScanline function
 static inline void drawScanline(int32_t xs, int32_t xe, int32_t u, int32_t v,
-    int32_t du, int32_t dv, int y, int tetromino_type) {
-#if defined(_8BITS_WRITES)
-    uint8_t *fb_ptr = ((uint8_t*)GAME_FRAMEBUFFER) + y * SCREEN_WIDTH + xs;
-    int32_t num_pixels = xe - xs + 1;
-    for (int32_t i = 0; i < num_pixels; i++) {
-        int32_t color = fetchTextureColor(u, v, tetromino_type);
-        *fb_ptr++ = (uint8_t)color;
-        u += du;
-        v += dv;
+    int32_t du, int32_t dv, int y) {
+    // Set up the framebuffer pointer at the start of this scanline
+    fb_ptr = (int16_t *)GAME_FRAMEBUFFER + y * (SCREEN_WIDTH / 2) + (xs / 2);
+    
+    // How many 16-bit writes (pairs of pixels) to process
+	int32_t num_pairs = (xe - xs + 1) / 2;
+
+    while (num_pairs > 0)
+    {
+        SetPixel16(fetchTextureColor(u, v, du, dv));
+        
+        u += du * 2;
+        v += dv * 2;
+        fb_ptr++;
+
+        num_pairs--;
     }
-#elif defined(_16BITS_WRITES)
-    uint8_t *fb_line_start = ((uint8_t*)GAME_FRAMEBUFFER) + y * SCREEN_WIDTH;
-    uint8_t *fb_ptr8 = fb_line_start + xs;
-    int32_t x = xs;
-
-    // Handle odd starting pixel
-    /*if (x & 1) {
-        int32_t color = fetchTextureColor(u, v, tetromino_type);
-        *fb_ptr8++ = (uint8_t)color;
-        x++;
-        u += du;
-        v += dv;
-    }*/
-
-    // Now x is even; proceed with 16-bit writes
-    uint16_t *fb_ptr16 = (uint16_t*)fb_ptr8;
-    int32_t num_pixels = xe - x + 1;
-    int32_t num_pairs = num_pixels / 2;
-    for (int32_t i = 0; i < num_pairs; i++) {
-        int32_t color1 = fetchTextureColor(u, v, tetromino_type);
-        u += du;
-        v += dv;
-        int32_t color2 = fetchTextureColor(u, v, tetromino_type);
-        u += du;
-        v += dv;
-    #ifdef BIGENDIAN_TEXTURING
-        uint16_t colors = (uint16_t)((color1 << 8) | color2);
-    #else
-        uint16_t colors = (uint16_t)((color2 << 8) | color1);
-    #endif
-        *fb_ptr16++ = colors;
-    }
-
-    // Handle remaining pixel if any
-    /*if (num_pixels & 1) {
-        int32_t color = fetchTextureColor(u, v, tetromino_type);
-        u += du;
-        v += dv;
-        fb_ptr8 = (uint8_t*)fb_ptr16;
-        *fb_ptr8 = (uint8_t)color;
-    }*/
-#endif
 }

@@ -104,7 +104,8 @@
 // Place critical functions and data in ORAM
 
 #if PLATFORM == CASLOOPY
-#define ORAM_DATA __attribute__((section(".oram_data"), used, aligned(4)))
+//#define ORAM_DATA __attribute__((section(".oram_data"), used, aligned(4)))
+#define ORAM_DATA
 #else
 #define ORAM_DATA
 #endif

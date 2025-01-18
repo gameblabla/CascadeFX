@@ -1,6 +1,6 @@
 # Define compiler and flags
 CC = gcc
-CFLAGS ?= -Wall -Wextra -O2 -DPLATFORM=2 -DBY16=1
+CFLAGS ?= -Wall -Wextra -O2 -DPLATFORM=2 -DBY16=1 -DFAST_DIV=1
 LDFLAGS = -lSDL -lSDL_mixer -lSDL_image -lm
 
 # Define the source and build folders

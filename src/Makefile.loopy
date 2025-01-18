@@ -34,7 +34,7 @@ OBJDIR = ./obj
 ROM    = ./rom.bin
 
 # Basic compile options
-OPTIMIZE = -Ofast -flto -Wvla
+OPTIMIZE = -Oz -flto -Wvla
 LIBS =
 
 # Below here probably doesn't need to be touched
