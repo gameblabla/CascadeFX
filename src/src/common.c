@@ -21,7 +21,7 @@ void initDivs()
 }
 
 // Puzzle pieces (shapes) as a 1D array
-const int32_t puzzle_pieces[7 * 4 * 4 * 4] __attribute__((aligned(4))) = {
+const int32_t puzzle_pieces[7 * 4 * 4 * 4] __attribute__((aligned(32))) = {
     // Flattened data
     // Type 0 (I)
     // Rotation 0
@@ -147,7 +147,7 @@ ORAM_DATA const Point3D cube_vertices_template[8]  __attribute__((aligned(32))) 
 
 
 // Grids for puzzle mode
-const DEFAULT_INT initial_grids[MAX_PUZZLES * GRID_HEIGHT * GRID_WIDTH]  __attribute__((aligned(4))) = {
+const DEFAULT_INT initial_grids[MAX_PUZZLES * GRID_HEIGHT * GRID_WIDTH]  __attribute__((aligned(32))) = {
     // Puzzle 1 grid data
     // Rows 0-9: all zeros
     ROW_ZEROS, // Row 0

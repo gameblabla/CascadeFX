@@ -8,7 +8,7 @@
 # "Floopy Drive" flash cart has 128K
 SRAMSIZE = 0K
 # Allocated stack size, increase if necessary
-STACKSIZE = 1K
+STACKSIZE = 4K
 
 # Toolchain programs
 WONDERFUL_TOOLCHAIN ?= 
@@ -34,7 +34,7 @@ OBJDIR = ./obj
 ROM    = ./rom.bin
 
 # Basic compile options
-OPTIMIZE = -Oz -flto -Wvla
+OPTIMIZE = -Os -flto -Wvla
 LIBS =
 
 # Below here probably doesn't need to be touched

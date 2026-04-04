@@ -26,17 +26,6 @@
 
 extern void *   memcpy (void *__restrict, const void *__restrict, size_t);;
 
-#ifdef FAST_DIV
-static uint16_t div_lutr[1025];
-static void init_div_lutr_fast(void) {
-    int i;
-    div_lutr[0] = 0;
-    for(i=1;i<1025;i++){
-        div_lutr[i] = (1<<FP)/i;
-    }
-}
-#endif
-
 #if PLATFORM == UNIX
 #include <SDL/SDL.h>
 #include <SDL/SDL_image.h>
@@ -457,11 +446,94 @@ static inline DEFAULT_INT compare_faces(const void *a, const void *b) {
 #endif
 
 
+// Initialize edges
+static inline void initEdges(EdgeData *edges, const Point2D *points) {
+    for (int16_t i = 0; i < 4; i += 1) 
+    {
+        // Process edge i
+        {
+            const Point2D *pA = points + i;
+            const Point2D *pB = points + ((i + 1) & 3);  // Use bitwise AND to avoid modulo operation
+            DEFAULT_INT dy = pB->y - pA->y;
+            EdgeData *edge = edges + i;
+
+            if (dy == 0) {
+                edge->y_start = edge->y_end = pA->y;
+                edge->x = INT_TO_FIXED(pA->x);
+                edge->u = pA->u;
+                edge->v = pA->v;
+                edge->x_step = edge->u_step = edge->v_step = 0;
+            } else if (dy > 0) {
+                edge->y_start = pA->y;
+                edge->y_end = pB->y;
+                edge->x = INT_TO_FIXED(pA->x);
+                edge->u = pA->u;
+                edge->v = pA->v;
+
+                DEFAULT_INT dx = pB->x - pA->x;
+                DEFAULT_INT du = pB->u - pA->u;
+                DEFAULT_INT dv = pB->v - pA->v;
+
+                edge->x_step = Division(INT_TO_FIXED(dx), dy);
+                edge->u_step = Division(du, dy);
+                edge->v_step = Division(dv, dy);
+            } else {
+                edge->y_start = pB->y;
+                edge->y_end = pA->y;
+                edge->x = INT_TO_FIXED(pB->x);
+                edge->u = pB->u;
+                edge->v = pB->v;
+
+                dy = -dy; // Make dy positive
+                DEFAULT_INT dx = pA->x - pB->x;
+                DEFAULT_INT du = pA->u - pB->u;
+                DEFAULT_INT dv = pA->v - pB->v;
+
+
+                edge->x_step = Division(INT_TO_FIXED(dx), dy);
+                edge->u_step = Division(du, dy);
+                edge->v_step = Division(dv, dy);
+            }
+        }
+
+    }
+}
+
+// Process edges for each scanline with partial unrolling
+static inline void processEdges(
+    DEFAULT_INT y,
+    EdgeData *edges,
+    DEFAULT_INT *num_intersections,
+    DEFAULT_INT *x_intersections,
+    DEFAULT_INT *u_intersections,
+    DEFAULT_INT *v_intersections
+) {
+    for (int16_t i = 0; i < 4; i += 1) {
+        // Process edge i
+        {
+            EdgeData *edge = edges + i;
+            if (y >= edge->y_start && y < edge->y_end) {
+                *x_intersections++ = FIXED_TO_INT(edge->x);
+                *u_intersections++ = edge->u;
+                *v_intersections++ = edge->v;
+                (*num_intersections)++;
+
+                // Update edge positions for the next scanline
+                edge->x += edge->x_step;
+                edge->u += edge->u_step;
+                edge->v += edge->v_step;
+            }
+        }
+
+    }
+}
+
+// Refactored drawTexturedQuad function using the unrolled static inline functions
 static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D p3) 
 {
     // Use the vertices as given
     Point2D points_array[4] = { p0, p1, p2, p3 };
-    Point2D *points = points_array;
+    const Point2D *points = points_array;
 
     // Unrolled min_y and max_y calculation
     DEFAULT_INT min_y = points->y, max_y = points->y;
@@ -469,75 +541,15 @@ static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D 
     if ((points + 2)->y < min_y) min_y = (points + 2)->y; else if ((points + 2)->y > max_y) max_y = (points + 2)->y;
     if ((points + 3)->y < min_y) min_y = (points + 3)->y; else if ((points + 3)->y > max_y) max_y = (points + 3)->y;
     
-	if (min_y <= 0) min_y = 0;
-	//if (max_y >= SCREEN_HEIGHT) max_y = SCREEN_HEIGHT;
-	
+    if (min_y <= 0) min_y = 0;
+    //if (max_y >= SCREEN_HEIGHT) max_y = SCREEN_HEIGHT;
+    
     EdgeData edges_array[4];
     EdgeData *edges = edges_array;
 
-    // Precompute edge data and initialize edge positions in a single loop
-    for (int16_t i = 0; i < 4; i++) {
-        Point2D *pA = points + i;
-        Point2D *pB = points + ((i + 1) & 3);  // Use bitwise AND to avoid modulo operation
-
-        DEFAULT_INT dy = pB->y - pA->y;
-        EdgeData *edge = edges + i;
-
-        if (dy == 0) {
-            edge->y_start = edge->y_end = pA->y;
-            edge->x = INT_TO_FIXED(pA->x);
-            edge->u = pA->u;
-            edge->v = pA->v;
-            edge->x_step = edge->u_step = edge->v_step = 0;
-            continue; // Skip horizontal edges
-        }
-
-        if (dy > 0) {
-            edge->y_start = pA->y;
-            edge->y_end = pB->y;
-            edge->x = INT_TO_FIXED(pA->x);
-            edge->u = pA->u;
-            edge->v = pA->v;
-            
-            DEFAULT_INT dx = pB->x - pA->x;
-            DEFAULT_INT du = pB->u - pA->u;
-			DEFAULT_INT dv = pB->v - pA->v;
-#ifdef FAST_DIV
-			int32_t rdy = div_lutr[dy];
-			edge->x_step = fp_mul((INT_TO_FIXED(pB->x - pA->x)) << FP, rdy) >> FP;
-            edge->u_step = fp_mul((pB->u - pA->u) << FP, rdy) >> FP;
-            edge->v_step = fp_mul((pB->v - pA->v) << FP, rdy) >> FP;
-#else
-            edge->x_step = Division(INT_TO_FIXED(pB->x - pA->x) , dy);
-            edge->u_step = Division(pB->u - pA->u , dy);
-            edge->v_step = Division(pB->v - pA->v , dy);
-#endif
-        } else {
-            edge->y_start = pB->y;
-            edge->y_end = pA->y;
-            edge->x = INT_TO_FIXED(pB->x);
-            edge->u = pB->u;
-            edge->v = pB->v;
-
-            dy = -dy; // Make dy positive
-			DEFAULT_INT dx = pA->x - pB->x;
-			DEFAULT_INT du = pA->u - pB->u;
-			DEFAULT_INT dv = pA->v - pB->v;
-			
-#ifdef FAST_DIV
-			int32_t rdy = div_lutr[dy];
-			edge->x_step = fp_mul((INT_TO_FIXED(pA->x - pB->x)) << FP, rdy) >> FP;
-            edge->u_step = fp_mul((pA->u - pB->u) << FP, rdy) >> FP;
-            edge->v_step = fp_mul((pA->v - pB->v) << FP, rdy) >> FP;
-#else
-			edge->x_step = Division(INT_TO_FIXED(pA->x - pB->x), dy);
-            edge->u_step = Division(pA->u - pB->u , dy);
-            edge->v_step = Division(pA->v - pB->v , dy);
-#endif
-        }
-    }
-	
-	
+    // Initialize edges using the unrolled static inline function
+    initEdges(edges, points);
+    
     // For each scanline from min_y to max_y
     for (DEFAULT_INT y = min_y; y <= max_y; y++) {
         DEFAULT_INT num_intersections = 0;
@@ -546,26 +558,8 @@ static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D 
         DEFAULT_INT *u_int_ptr = u_intersections;
         DEFAULT_INT *v_int_ptr = v_intersections;
 
-        // Process edges and update positions in a single loop
-        for (int16_t i = 0; i < 4; i++) {
-            EdgeData *edge = edges + i;
-            if (y >= edge->y_start) 
-            {
-				if (y < edge->y_end)
-				{
-					// Store intersection data
-					*x_int_ptr++ = FIXED_TO_INT(edge->x);
-					*u_int_ptr++ = edge->u;
-					*v_int_ptr++ = edge->v;
-					num_intersections++;
-
-					// Update edge positions for the next scanline
-					edge->x += edge->x_step;
-					edge->u += edge->u_step;
-					edge->v += edge->v_step;
-				}
-            }
-        }
+        // Process edges using the unrolled static inline function
+        processEdges(y, edges, &num_intersections, x_intersections, u_intersections, v_intersections);
 
         if (num_intersections != 2) {
             continue;
@@ -597,19 +591,13 @@ static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D 
         DEFAULT_INT dx = xe - xs;
         if (dx == 0) continue;  // Avoid division by zero
 
+        DEFAULT_INT du = Division(ue - us, dx);
+        DEFAULT_INT dv = Division(ve - vs, dx); 
 
-#ifdef FAST_DIV
-		int32_t rdx = div_lutr[dx];
-		DEFAULT_INT du = fp_mul((ue - us) << FP, rdx) >> FP;
-		DEFAULT_INT dv = fp_mul((ve - vs) << FP, rdx) >> FP;		
-#else
-		DEFAULT_INT du = Division(ue - us, dx);
-		DEFAULT_INT dv = Division(ve - vs, dx);
-#endif   
-
-		drawScanline(xs, xe, us, vs, du, dv, y);
+        drawScanline(xs, xe, us, vs, du, dv, y);
     }
 }
+
 
 
 static inline void draw_sorted_faces() 
@@ -1760,9 +1748,6 @@ int main()
 		return 0;
 	}
 	
-#ifdef FAST_DIV
-	init_div_lutr_fast();
-#endif
 	initDivs();
 
     // Initialize game state
@@ -1968,7 +1953,7 @@ int main()
 				// Update rotation angles
 				title_cube_rotation_x = (title_cube_rotation_x + 1) & ANGLE_MASK;
 				title_cube_rotation_y = (title_cube_rotation_y + 2) & ANGLE_MASK;
-				title_cube_rotation_z = (title_cube_rotation_z + 3) & ANGLE_MASK;
+				//title_cube_rotation_z = (title_cube_rotation_z + 3) & ANGLE_MASK;
 				
                 // Blinking text
                 blink_counter++;
@@ -2046,20 +2031,20 @@ int main()
 				{
 					case 0:
 						PrintText("> Arcade Mode", SCREEN_WIDTH_HALF - 50, 180);
-						PrintText("  Puzzle Mode", SCREEN_WIDTH_HALF - 50, 200);
+						PrintText("  Training", SCREEN_WIDTH_HALF - 50, 200);
 						PrintText("  Credits", SCREEN_WIDTH_HALF - 50, 220);
 					break;
 					case 1:
 
 						PrintText("  Arcade Mode", SCREEN_WIDTH_HALF - 50, 180);
-						PrintText("> Puzzle Mode", SCREEN_WIDTH_HALF - 50, 200);
+						PrintText("> Training", SCREEN_WIDTH_HALF - 50, 200);
 						PrintText("  Credits", SCREEN_WIDTH_HALF - 50, 220);
 						
 					break;
 					case 2:
 
 						PrintText("  Arcade Mode", SCREEN_WIDTH_HALF - 50, 180);
-						PrintText("  Puzzle Mode", SCREEN_WIDTH_HALF - 50, 200);
+						PrintText("  Training", SCREEN_WIDTH_HALF - 50, 200);
 						PrintText("> Credits", SCREEN_WIDTH_HALF - 50, 220);
 						
 					break;

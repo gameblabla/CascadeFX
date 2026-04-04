@@ -1,46 +1,3 @@
-static inline uint32_t fetchTextureColor(int32_t u, int32_t v) {
-    int tex_u = ((u >> 8) & 31);
-    int tex_v = ((v >> 8) & 31);
-    
-    // Calculate the index in the texture array
-    uint32_t texture_index = tex_v * 32 + tex_u;  // Texture is 32x32
-    
-    // Since texture is stored as uint16_t but contains 8-bit values, we access it as uint16_t*
-    int8_t *texture16 = (int8_t *)texture_actual;
-    
-    // Extract the 8-bit value from the 16-bit storage
-    int16_t color = (int16_t)(texture16[texture_index] ); // Assuming lower byte contains the color index
-    
-    return color;
-}
-
-static inline uint16_t fetchTextureColor16(DEFAULT_INT u, DEFAULT_INT v, DEFAULT_INT du, DEFAULT_INT dv) {
-	
-    // Convert fixed-point texture coordinates to integer
-    uint8_t tex_u1 = (u >> 8) & 31;  // First pixel's u coordinate
-    uint8_t tex_v1 = (v >> 8) & 31;  // First pixel's v coordinate
-
-    // Calculate the second pixel's texture coordinates
-    uint8_t tex_u2 = ((u + du) >> 8) & 31;  // Second pixel's u coordinate
-    uint8_t tex_v2 = ((v + dv) >> 8) & 31;  // Second pixel's v coordinate
-
-    // Calculate the indices into the texture array
-    uint32_t texture_index1 = tex_v1 * 32 + tex_u1;  // First pixel's index
-    uint32_t texture_index2 = tex_v2 * 32 + tex_u2;  // Second pixel's index
-
-    // Fetch the two 8-bit colors from the texture
-    uint8_t color1 = texture_actual[texture_index1];  // First pixel's color
-    uint8_t color2 = texture_actual[texture_index2];  // Second pixel's color
-
-    // Pack the two 8-bit colors into a 16-bit value
-#ifdef BIGENDIAN_TEXTURING
-    return (color1 << 8) | color2;  // Big-endian: color1 in MSB, color2 in LSB
-#else
-    return (color2 << 8) | color1;  // Little-endian: color2 in MSB, color1 in LSB
-#endif
-}
-
-
 // Global pointer to the current framebuffer position
 static int16_t *fb_ptr;
 
@@ -64,49 +21,83 @@ static inline void SetPixel8_xe(int32_t color) {
     *fb_ptr = (*fb_ptr & 0x00FF) | ((color & 0x00FF) << 8);
 }
 
+static inline uint8_t getTexU(int32_t uv) {
+    // Low 16 bits = U in 8.8 => integer part is the top 8 bits
+    // e.g. 0xUUFF => (0xUUFF >> 8) = 0xUU => & 31 for 32 wide
+    return (uint8_t)((uv >> 8) & 0x1F);
+}
 
-// Function to draw a scanline using pointer arithmetic
+static inline uint8_t getTexV(uint32_t uv) {
+    return (uint8_t)((uv >> 24) & 0x1F);
+}
+
+
+
+static inline uint8_t fetchTextureColor_uv(int32_t uv)
+{
+    // Extract integer U and V
+    uint8_t tex_u = getTexU(uv);
+    uint8_t tex_v = getTexV(uv);
+
+    // Lookup 8-bit color in a 32x32 texture
+    return texture_actual[tex_v * 32 + tex_u];
+}
+
+
+static inline uint16_t fetchTextureColor16_uv(int32_t uv, int32_t duv)
+{
+    // First pixel
+    uint8_t c1 = fetchTextureColor_uv(uv);
+
+    // Second pixel at uv + duv
+    uint8_t c2 = fetchTextureColor_uv(uv + duv);
+
+#ifdef BIGENDIAN_TEXTURING
+    return (uint16_t)((c1 << 8) | c2);
+#else
+    return (uint16_t)((c2 << 8) | c1);
+#endif
+}
+
+
+
 static inline void drawScanline(int32_t xs, int32_t xe, int32_t u, int32_t v,
     int32_t du, int32_t dv, int y) {
 
-    // Initialize framebuffer pointer to the starting position
-    fb_ptr = (int16_t *)framebuffer_game + y * (SCREEN_WIDTH / 2) + (xs / 2);
+    int32_t uv = ((int32_t)((uint16_t)v) << 16) |
+                  ((int32_t)((uint16_t)u));
 
-    // Handle the first pixel if xs is odd
+    int32_t duv = ((int32_t)((uint16_t)dv) << 16) |
+                   ((int32_t)((uint16_t)du));
+
+    fb_ptr = (int16_t *)framebuffer_game
+             + y * (SCREEN_WIDTH / 2)
+             + (xs / 2);
+
     if (xs & 1) {
-        int32_t color = fetchTextureColor(u, v);
-        u += du;
-        v += dv;
-
-        // Modify the lower byte of the current 16-bit word
+        uint8_t color = fetchTextureColor_uv(uv);
+        uv += duv;
         SetPixel8_xs(color);
-
-        // Move to the next 16-bit word
         fb_ptr++;
         xs++;
     }
 
-    // Calculate the number of full 16-bit words to write
-    int32_t num_pairs = (xe - xs + 1) / 2;
-    
-    // Use a decrementing loop for processing pixel pairs
-    while(num_pairs)
-    {
-        int16_t colors = fetchTextureColor16(u, v, du, dv);
-        u += du * 2;
-        v += dv * 2;
-        
-        // Set two pixels at once and advance the pointer
+
+    int32_t width = xe - xs ; 
+    int32_t num_pairs = width / 2;
+
+     do {
+        uint16_t colors = fetchTextureColor16_uv(uv, duv);
+        uv += duv;
+        uv += duv;
         SetPixel16(colors);
         fb_ptr++;
-        num_pairs--;
-    }
+    } while (num_pairs--);
 
-    // Handle the last pixel if xe is odd
-    if (xs == xe) {
-        int32_t color = fetchTextureColor(u, v);
 
-        // Modify the upper byte of the current 16-bit word
+    if (xs == xe) 
+    {
+        uint8_t color = fetchTextureColor_uv(uv);
         SetPixel8_xe(color);
     }
 }
