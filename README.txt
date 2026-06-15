@@ -1,6 +1,6 @@
 Cascade FX
 =================
-Version 1.0
+Version 0.5
 Programmed by Gameblabla
 
 A tetris-like game with software rendered 3D graphics for the NEC PC-FX :)
@@ -8,7 +8,7 @@ Programmed in C with liberis.
 
 Use the Dpad to control the pieces (A or Up to rotate).
 
-I decided not to improve the game further, as i considered it to be a small game.
+I decided not to improve the game further besides some bug fixing needed, as i considered it to be a small game.
 I did improve the feel of it, and greatly improved the speed of it.
 
 
