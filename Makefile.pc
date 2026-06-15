@@ -1,0 +1,23 @@
+CC ?= gcc
+CFLAGS ?= -Wall -Wextra -O2 -DPLATFORM=2 -DBY16=1 -DFAST_DIV=1
+LDFLAGS ?= -lSDL -lSDL_mixer -lSDL_image -lm
+CFX_INC = -Isrc/common -Isrc/game -Isrc/game/platform/pc -Isrc/runtime -Isrc/input/common -Isrc/input/pc -Isrc/runtime/pc -Isrc/sound -Isrc/graphics/common -Isrc/graphics/pc -Isrc/graphics/cd32
+SRCS = \
+    src/app/main.c \
+    src/runtime/cfx_app.c \
+    src/game/cfx_game_runtime.c \
+    src/game/platform/pc/pc_game_platform.c \
+    src/common/common.c \
+    src/common/physics.c \
+    src/runtime/pc/pc_present.c \
+    src/input/common/input_port_common.c \
+    src/input/pc/pc_input.c \
+    src/graphics/common/renderer3d.c \
+    src/graphics/common/font_drawing_pc.c
+TARGET = cascadefx_pc
+all: $(TARGET)
+$(TARGET): $(SRCS)
+	$(CC) $(CFLAGS) $(CFX_INC) $(SRCS) -o $@ $(LDFLAGS)
+clean:
+	rm -f $(TARGET)
+.PHONY: all clean

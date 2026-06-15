@@ -1,0 +1,44 @@
+# Amiga CD32/68020 build. This target uses the portable C raster path until
+# a CD32-specific inner loop is validated.
+CROSS_COMPILE ?= m68k-amigaos-
+CC = $(CROSS_COMPILE)gcc
+CFLAGS ?= -O2 -m68020 -DPLATFORM=4 -DBY16=1 -DHARDWARE_DIV=1
+CFX_INC = -Isrc -Isrc/common -Isrc/game -Isrc/game/platform/cd32 -Isrc/runtime -Isrc/input/common -Isrc/input/cd32 -Isrc/runtime/cd32 -Isrc/sound -Isrc/graphics/common -Isrc/graphics/cd32
+SRCS = \
+    src/app/main.c \
+    src/runtime/cfx_app.c \
+    src/game/cfx_game_runtime.c \
+    src/game/platform/cd32/cd32_game_platform.c \
+    src/common/common.c \
+    src/common/physics.c \
+    src/runtime/cd32/cd32_present.c \
+    src/input/common/input_port_common.c \
+    src/input/cd32/cd32_input.c \
+    src/graphics/common/renderer3d.c \
+    src/graphics/common/font_drawing_pc.c \
+    src/graphics/cd32/cd32.c
+TARGET = cascadefx_cd32
+ISO_STAGING ?= cdda_cd32
+TM_FILE ?= CD32.TM
+CUE_FILE ?= cdda.cue
+RAW_FILE ?= cdda.raw
+
+all: $(TARGET)
+
+$(TARGET): $(SRCS)
+	$(CC) $(CFLAGS) $(CFX_INC) $(SRCS) -o $@
+
+iso: $(TARGET)
+	rm -f $(ISO_STAGING)/Game/game
+	cp -p $(TARGET) $(ISO_STAGING)/Game/game
+	mkisofs -quiet -V POPCD32NTSC -copyright na -publisher na -o $(RAW_FILE) -relaxed-filenames -d -input-charset ASCII -output-charset ASCII -iso-level 3 -A "" -sysid CDTV $(ISO_STAGING)
+	python2 make_cd32_iso.py -t $$PWD/$(TM_FILE) $(RAW_FILE)
+	rm -f $(RAW_FILE)
+
+run: iso
+	fs-uae --amiga-model=CD32 --cdrom-drive-0="$(CUE_FILE)"
+
+clean:
+	rm -f $(TARGET) *.o $(RAW_FILE) cdda.bin cdda.cue
+
+.PHONY: all clean iso run

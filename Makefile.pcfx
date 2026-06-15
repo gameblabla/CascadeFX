@@ -1,0 +1,44 @@
+SRCDIR = ./src
+VPATH = $(SRCDIR)/app:$(SRCDIR)/game:$(SRCDIR)/game/platform/pcfx:$(SRCDIR)/common:$(SRCDIR)/runtime:$(SRCDIR)/runtime/pcfx:$(SRCDIR)/input/common:$(SRCDIR)/input/pcfx:$(SRCDIR)/graphics/common:$(SRCDIR)/graphics/pcfx
+SRC_C = \
+    src/app/main.c \
+    src/runtime/cfx_app.c \
+    src/game/cfx_game_runtime.c \
+    src/game/platform/pcfx/pcfx_game_platform.c \
+    src/graphics/pcfx/font_drawing_pcfx.c \
+    src/graphics/pcfx/pcfx.c \
+    src/common/common.c \
+    src/common/physics.c \
+    src/runtime/pcfx/pcfx_present.c \
+    src/input/common/input_port_common.c \
+    src/input/pcfx/pcfx_input.c \
+    src/graphics/common/renderer3d.c \
+    src/graphics/common/renderer3d_offscreen_direct.c
+SRC_S = \
+    src/graphics/pcfx/font.s \
+    src/graphics/pcfx/fastking.s
+OBJ_C = $(notdir $(patsubst %.c, %.o, $(SRC_C)))
+OBJ_S = $(notdir $(patsubst %.s, %.o, $(SRC_S)))
+CD_OBJECTS =
+OBJECTS = $(OBJ_C) $(OBJ_S)
+ELF_TARGET = mytest.elf
+BIN_TARGET = mytest.bin
+ADD_FILES =
+CD_FILES =
+CDOUT = mytest_cd
+PCFX_INCDIR = assets/generated/pcfx
+CONSOLE_ASSET_HEADERS = $(PCFX_INCDIR)/background.h $(PCFX_INCDIR)/title.h $(PCFX_INCDIR)/gamepal.h
+PCFX_VDC_BG_HEADER = $(PCFX_INCDIR)/vdc_background.h
+ASSET_HEADERS = $(PCFX_INCDIR)/textures.h $(CONSOLE_ASSET_HEADERS) $(PCFX_VDC_BG_HEADER)
+CFLAGS += -DCFX_PCFX_ENABLE_CDDA=1
+CFX_INC = -Isrc -Isrc/common -Isrc/game -Isrc/game/platform/pcfx -Isrc/runtime -Isrc/input/common -Isrc/input/pcfx -Isrc/runtime/pcfx -Isrc/sound -Isrc/graphics/common -Isrc/graphics/pcfx -Iassets/generated/pcfx
+include example.mk
+
+$(CONSOLE_ASSET_HEADERS): $(PCFX_INCDIR)/.console_assets.stamp
+
+$(PCFX_INCDIR)/.console_assets.stamp: assets/source/title.png assets/source/background2.png tools/generate_console_assets.py tools/texture_low_index_map.txt
+	/usr/bin/env python3 tools/generate_console_assets.py --platform pcfx
+	@touch $@
+
+$(PCFX_VDC_BG_HEADER): assets/source/title.png assets/source/background2.png tools/generate_pcfx_vdc_background.py tools/texture_low_index_map.txt
+	/usr/bin/env python3 tools/generate_pcfx_vdc_background.py --src assets/source --map tools/texture_low_index_map.txt --out $@

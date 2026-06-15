@@ -1,0 +1,32 @@
+CC ?= gcc
+CFLAGS ?= -O3 -Wall -Wextra -DPLATFORM=5 -DBY16=1 -DHARDWARE_DIV=1
+CFX_INC = -Isrc/common -Isrc/runtime -Isrc/input/common -Isrc/input/headless -Isrc/sound -Isrc/graphics/common -Isrc/platform/headless -Iassets/generated/headless
+SRCS = \
+    src/platform/headless/headless_main.c \
+    src/platform/headless/bmp_writer.c \
+    src/input/headless/command_input.c \
+    src/input/headless/headless_input.c \
+    src/platform/headless/headless_platform.c \
+    src/common/common.c \
+    src/common/physics.c \
+    src/graphics/common/renderer3d.c
+ASSET_HEADERS = \
+    assets/generated/headless/gamepal.h \
+    assets/generated/headless/title.h \
+    assets/generated/headless/title320.h \
+    assets/generated/headless/background320.h \
+    assets/generated/headless/textures.h \
+    assets/generated/headless/index_map.h
+TARGET = cfx_headless
+all: $(TARGET)
+$(ASSET_HEADERS): assets/source/title.png assets/source/title320.png assets/source/background320.png assets/source/textures.png tools/texture_low_index_map.txt tools/generate_headless_assets.py
+	python3 tools/generate_headless_assets.py
+
+$(TARGET): $(SRCS) $(ASSET_HEADERS)
+	$(CC) $(CFLAGS) $(CFX_INC) $(SRCS) -lm -lz -o $@
+run: $(TARGET)
+	./$(TARGET) --frames 120 --width 320 --out headless_frames --dump-every 1 --format png
+clean:
+	rm -f $(TARGET)
+	rm -rf headless_frames
+.PHONY: all run clean

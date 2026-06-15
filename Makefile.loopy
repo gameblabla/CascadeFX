@@ -1,0 +1,80 @@
+SRAMSIZE = 0K
+STACKSIZE = 1K
+WONDERFUL_TOOLCHAIN ?=
+TOOLBIN ?=
+PREFIX ?= sh1-elf-
+CC  = $(TOOLBIN)$(PREFIX)gcc
+CXX = $(TOOLBIN)$(PREFIX)g++
+LD  = $(TOOLBIN)$(PREFIX)ld
+OBJ = $(TOOLBIN)$(PREFIX)objcopy
+MV = mv
+MKDIR = mkdir -p
+RMDIR = rm -rf
+FIXROM = /usr/bin/env python3 ./tools/fixrom.py
+OBJDIR = ./obj
+ROM = ./rom.bin
+INCDIR = ./assets/generated/casloopy
+CONSOLE_ASSET_HEADERS = $(INCDIR)/background.h $(INCDIR)/title.h $(INCDIR)/gamepal.h
+ASSET_HEADERS = $(INCDIR)/textures.h $(CONSOLE_ASSET_HEADERS)
+OPTIMIZE = -O2 -flto -Wvla
+LIBS =
+LDSCRIPT = ./tools/loopy.ld
+SRCS_C = \
+    src/app/main.c \
+    src/runtime/cfx_app.c \
+    src/game/cfx_game_runtime.c \
+    src/game/platform/casloopy/casloopy_game_platform.c \
+    src/graphics/casloopy/casloopy.c \
+    src/common/common.c \
+    src/graphics/common/renderer3d.c \
+    src/common/physics.c \
+    src/runtime/casloopy/casloopy_present.c \
+    src/input/common/input_port_common.c \
+    src/input/casloopy/casloopy_input.c \
+    src/platform/casloopy/crt0.c \
+    src/platform/casloopy/vectors.c \
+    src/platform/casloopy/cfx_loopy_timer.c \
+    src/graphics/casloopy/font_drawing.c
+OBJS_C = $(patsubst %.c,$(OBJDIR)/%.o,$(SRCS_C))
+SRCS_S = src/platform/casloopy/header.s src/platform/casloopy/startup.s
+OBJS_S = $(patsubst %.s,$(OBJDIR)/%.o,$(SRCS_S))
+CFX_INC = -Isrc -Isrc/common -Isrc/game -Isrc/game/platform/casloopy -Isrc/runtime -Isrc/input/common -Isrc/input/casloopy -Isrc/runtime/casloopy -Isrc/sound -Isrc/graphics/common -Isrc/graphics/casloopy -Isrc/platform/casloopy -I$(INCDIR)
+CFLAGS  = $(OPTIMIZE)
+CFLAGS += -m1 -mrenesas -DPLATFORM=3 -DHARDWARE_DIV=1 -DBY16=1 -fbuiltin
+CFLAGS += -ffreestanding
+CFLAGS += -falign-functions=4 -ffunction-sections -fdata-sections
+CFLAGS += -fomit-frame-pointer -fno-asynchronous-unwind-tables -fno-unwind-tables
+CFLAGS += -Wstack-usage=$(shell numfmt --from=iec $(STACKSIZE)) $(CFX_INC)
+CXXFLAGS = -std=c++23 -fno-exceptions -fno-non-call-exceptions -fno-rtti -fno-threadsafe-statics
+SIZEDEFS  = -Wl,--defsym=SRAMSIZE=$(SRAMSIZE)
+SIZEDEFS += -Wl,--defsym=STACKSIZE=$(STACKSIZE)
+LDFLAGS  = -nostartfiles -lgcc -Wl,--gc-sections -Wl,--as-needed -flto -Wl,--no-warn-rwx-segment -Wl,--orphan-handling=error -Wl,--print-memory-usage
+LDFLAGS += $(SIZEDEFS) -Wl,-T $(LDSCRIPT) $(LIBS) -s
+.PHONY: clean rom
+all: rom
+rom: $(ASSET_HEADERS) $(ROM)
+%.elf:
+	$(CC) $(CFLAGS) $^ -o $@ $(LDFLAGS)
+%.bin: %.elf
+	$(OBJ) -O binary $< $@
+	$(FIXROM) $(ROM)
+$(ROM:.bin=.elf): $(OBJS_S) $(OBJS_C)
+$(OBJDIR)/%.o: %.s | $(OBJDIR)
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -c $< -o $@
+$(OBJDIR)/%.o: %.c $(ASSET_HEADERS) | $(OBJDIR)
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -c $< -o $@
+$(OBJDIR):
+	$(MKDIR) $@
+$(INCDIR)/textures.h: assets/source/textures.png tools/png_indexed_to_texture_header.py tools/texture_low_index_map.txt
+	/usr/bin/env python3 tools/png_indexed_to_texture_header.py $< $@ texture --width 32 --height 224 --index-map tools/texture_low_index_map.txt
+
+$(CONSOLE_ASSET_HEADERS): $(INCDIR)/.console_assets.stamp
+
+$(INCDIR)/.console_assets.stamp: assets/source/title.png assets/source/background2.png tools/generate_console_assets.py tools/texture_low_index_map.txt
+	/usr/bin/env python3 tools/generate_console_assets.py --platform casloopy
+	@touch $@
+clean:
+	$(RMDIR) $(OBJDIR)
+	$(RM) $(ROM) rom.elf
