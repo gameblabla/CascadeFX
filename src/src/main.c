@@ -43,7 +43,7 @@ void Empty_Palette() {};
 #include "readysfx.h"
 
 #include "bg.h"
-#include "textures.h"
+#include "textures_pcfx.h"
 #include "title.h"
 
 #endif
