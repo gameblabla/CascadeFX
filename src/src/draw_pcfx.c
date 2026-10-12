@@ -9,8 +9,11 @@ static inline int16_t fetchTextureColor(int32_t u, int32_t v, int tetromino_type
     // Calculate the index in the texture array
     int index = tile_index * 32 * 16 + local_v * 32 + tex_u;
     
-    const uint8_t *texture8 = (const uint8_t *)texture;
-    return texture8[index];
+    /* bin2c -w keeps adjacent PNG texels in one word in source order.  The
+       V810 is little-endian, so reading that word through uint8_t * reverses
+       each horizontal pair. */
+    uint16_t packed_texels = texture[index >> 1];
+    return (index & 1) ? (packed_texels & 0x00FF) : (packed_texels >> 8);
 }
 
 // Global pointer to the current framebuffer position
