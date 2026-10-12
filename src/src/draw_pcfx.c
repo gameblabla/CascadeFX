@@ -9,30 +9,8 @@ static inline int16_t fetchTextureColor(int32_t u, int32_t v, int tetromino_type
     // Calculate the index in the texture array
     int index = tile_index * 32 * 16 + local_v * 32 + tex_u;
     
-    // Since texture is stored as uint16_t but contains 8-bit values, we access it as uint16_t*
-    int8_t *texture16 = (int8_t *)texture;
-    
-    // Extract the 8-bit value from the 16-bit storage
-    int16_t color = (int16_t)(texture16[index] ); // Assuming lower byte contains the color index
-    
-    return color;
-}
-
-static inline int16_t fetchTextureColor16(int32_t u, int32_t v, int tetromino_type) {
-    int32_t tex_u = ((u >> 8) & 31);
-    int32_t tex_v_full = ((v >> 8) & 31);
-    bool is_brighter = tex_v_full >= 16;
-    int32_t local_v = tex_v_full & 0x0F;
-    int tile_index = tetromino_type * 2 + (is_brighter ? 1 : 0);
-	//if (tile_index >= 14) tile_index = 0;
-
-    // Calculate the index in the texture array
-    int index = (tile_index * 32 * 16 + local_v * 32 + tex_u)/2;
-
-	int16_t *texture16 = (int16_t *)texture;
-    int16_t color = (int16_t)(texture16[index] ); // Assuming lower byte contains the color index
-    
-    return color;
+    const uint8_t *texture8 = (const uint8_t *)texture;
+    return texture8[index];
 }
 
 // Global pointer to the current framebuffer position
@@ -63,46 +41,41 @@ static inline void SetPixel8_xe(int32_t color) {
 static inline void drawScanline(int32_t xs, int32_t xe, int32_t u, int32_t v,
     int32_t du, int32_t dv, int y, int tetromino_type) {
 
-    // Initialize framebuffer pointer to the starting position
-    fb_ptr = (int16_t *)framebuffer_game + y * (SCREEN_WIDTH / 2) + (xs / 2);
+    if (y < 0 || y >= SCREEN_HEIGHT || xs > xe)
+        return;
+    if (xs < 0) {
+        int32_t skip = -xs;
+        u += du * skip;
+        v += dv * skip;
+        xs = 0;
+    }
+    if (xe >= SCREEN_WIDTH)
+        xe = SCREEN_WIDTH - 1;
+    if (xs > xe)
+        return;
 
-    // Handle the first pixel if xs is odd
-    if (xs & 1) {
-        int32_t color = fetchTextureColor(u, v, tetromino_type);
-        u += du;
-        v += dv;
+    int32_t x = xs;
+    fb_ptr = (int16_t *)framebuffer_game + y * (SCREEN_WIDTH / 2) + (x / 2);
 
-        // Modify the lower byte of the current 16-bit word
-        SetPixel8_xs(color);
-
-        // Move to the next 16-bit word
+    if (x & 1) {
+        /* KING's 8bpp word stores the left (even-x) pixel in the high byte. */
+        SetPixel8_xs(fetchTextureColor(u, v, tetromino_type));
         fb_ptr++;
-        xs++;
+        x++;
+        u += du;
+        v += dv;
     }
 
-    // Calculate the number of full 16-bit words to write
-    int32_t num_pairs = (xe - xs + 1) / 2;
-    
-    // Use a decrementing loop for processing pixel pairs
-    while(num_pairs)
-    {
-        int16_t colors = fetchTextureColor16(u, v, tetromino_type);
-        u += du;
-        v += dv;
-        u += du;
-        v += dv;
-        
-        // Set two pixels at once and advance the pointer
-        SetPixel16(colors);
+    while (x + 1 <= xe) {
+        uint16_t first = (uint8_t)fetchTextureColor(u, v, tetromino_type);
+        uint16_t second = (uint8_t)fetchTextureColor(u + du, v + dv, tetromino_type);
+        SetPixel16((first << 8) | second);
         fb_ptr++;
-        num_pairs--;
+        x += 2;
+        u += du * 2;
+        v += dv * 2;
     }
 
-    // Handle the last pixel if xe is odd
-    if (xs == xe) {
-        int32_t color = fetchTextureColor(u, v, tetromino_type);
-
-        // Modify the upper byte of the current 16-bit word
-        SetPixel8_xe(color);
-    }
+    if (x <= xe)
+        SetPixel8_xe(fetchTextureColor(u, v, tetromino_type));
 }

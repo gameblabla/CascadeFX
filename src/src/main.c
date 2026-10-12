@@ -257,8 +257,9 @@ static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D 
     if ((points + 2)->y < min_y) min_y = (points + 2)->y; else if ((points + 2)->y > max_y) max_y = (points + 2)->y;
     if ((points + 3)->y < min_y) min_y = (points + 3)->y; else if ((points + 3)->y > max_y) max_y = (points + 3)->y;
     
-	if (min_y <= 0) min_y = 0;
-	//if (max_y >= SCREEN_HEIGHT) max_y = SCREEN_HEIGHT;
+    if (min_y < 0) min_y = 0;
+    if (max_y >= SCREEN_HEIGHT) max_y = SCREEN_HEIGHT - 1;
+    if (min_y > max_y) return;
 	
     EdgeData edges_array[4];
     EdgeData *edges = edges_array;
@@ -308,6 +309,16 @@ static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D 
 			edge->x_step = Division(INT_TO_FIXED(pA->x - pB->x), dy);
             edge->u_step = Division(pA->u - pB->u , dy);
             edge->v_step = Division(pA->v - pB->v , dy);
+        }
+
+        /* min_y may have been clipped to the screen. Advance the edge state
+           to that first visible row, or clipped faces start at their offscreen
+           top vertex and produce stretched/stray spans. */
+        if (edge->y_start < min_y) {
+            int skip = min_y - edge->y_start;
+            edge->x += edge->x_step * skip;
+            edge->u += edge->u_step * skip;
+            edge->v += edge->v_step * skip;
         }
     }
 	
@@ -369,7 +380,10 @@ static inline void drawTexturedQuad(Point2D p0, Point2D p1, Point2D p2, Point2D 
         int ve = *v1;
 
         int dx = xe - xs;
-        if (dx == 0) continue;  // Avoid division by zero
+        if (dx == 0) {
+            drawScanline(xs, xe, us, vs, 0, 0, y, tetromino_type);
+            continue;
+        }
 
         int du = Division(ue - us, dx);
 		int dv = Division(ve - vs, dx);

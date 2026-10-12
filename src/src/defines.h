@@ -19,9 +19,16 @@
 #define FIXED_TO_INT(x) ((x) >> FIXED_POINT_SHIFT)
 
 #ifdef HARDWARE_DIV
-    #define Division(numerator, denominator) ((numerator) / (denominator))
+    #define Division(numerator, denominator) (((denominator) != 0) ? ((numerator) / (denominator)) : 0)
 #else
-    #define Division(numerator, denominator) (((numerator) * divTab[(denominator) + DIV_TAB_HALF]) >> DIV_TAB_SHIFT)
+    /* divTab contains reciprocals only for denominators in [-128, 127].
+       Projection and clipped screen spans can exceed that range, so use the
+       V810 integer divide for those values instead of indexing past the LUT. */
+    #define Division(numerator, denominator) \
+        (((denominator) == 0) ? 0 : \
+         (((denominator) >= -DIV_TAB_HALF && (denominator) < DIV_TAB_HALF) ? \
+          (((numerator) * divTab[(denominator) + DIV_TAB_HALF]) >> DIV_TAB_SHIFT) : \
+          ((numerator) / (denominator))))
 #endif
 
 #define SCREEN_WIDTH_HALF (SCREEN_WIDTH / 2)
